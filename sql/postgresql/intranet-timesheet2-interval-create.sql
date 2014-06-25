@@ -62,8 +62,8 @@ create table im_hour_intervals (
 	material_id		integer
 				constraint im_hour_intervals_material_fk
 				references im_materials,
-	activity_type_id	integer
-				constraint im_hour_intervals_activity_type_fk
+	activity_id		integer
+				constraint im_hour_intervals_activity_fk
 				references im_categories,
 	note			text,
 	internal_note		text

@@ -9,6 +9,8 @@
 # 
 # ---------------------------------------------------------------------
 
+set current_user_id [ad_get_user_id]
+
 # The following variables are expected in the environment
 # defined by the calling /tcl/*.tcl libary:
 #	project_id

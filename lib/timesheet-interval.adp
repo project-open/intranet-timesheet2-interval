@@ -13,40 +13,50 @@ Ext.require([
     'Ext.data.*',
     'Ext.grid.*',
     'Ext.tree.*',
-    'Ext.ux.CheckColumn',
     'PO.class.CategoryStore',
-    'PO.model.timesheet.TimesheetTask',
     'PO.controller.StoreLoadCoordinator',
-    'PO.store.project.ProjectStatusStore',
-    'PO.store.timesheet.TaskTreeStore'
+    'PO.model.timesheet.TimesheetTask',
+    'PO.model.timesheet.HourInterval',
+    'PO.store.timesheet.HourIntervalStore',
+    'PO.store.timesheet.TaskTreeStore',
+    'PO.store.timesheet.HourIntervalActivityStore'
 ]);
 
 
 function launchTreePanel(){
 
+    // Stores
+    var hourIntervalStore = Ext.StoreManager.get('hourIntervalStore');
     var taskTreeStore = Ext.StoreManager.get('taskTreeStore');
-    var statusStore = Ext.StoreManager.get('projectStatusStore');
     var ganttTreePanel = Ext.create('PO.view.gantt.GanttTreePanel', {
         width:		300,
         region:		'west',
     });
 
-    var intervalStore = Ext.StoreManager.get('projectStatusStore');
+    // Renderer to display a project_id as project_name
+    var projectRenderer = function(project_id, metaData, record, rowIndex, colIndex, store, view) {
+	var projectName = '#'+project_id;
+	var projectNode = taskTreeStore.getNodeById(project_id);
+	if (projectNode) { projectName = projectNode.get('project_name'); }
+	return projectName;
+    };
 
-
-    var grid1 = Ext.create('Ext.grid.Panel', {
-	    store: intervalStore,
-	    columns: [
-    {text: "Category", flex: 1, dataIndex: 'category'},
-    {text: "ID", dataIndex: 'category_id'},
-		      ],
-	    columnLines: true,
-	    enableLocking: true,
-	    collapsible: false,
-	    title: 'Expander Rows in a Collapsible Grid with lockable columns',
-	    iconCls: 'icon-grid',
-	    margin: '0 0 20 0'
-	});
+    var hourIntervalGrid = Ext.create('Ext.grid.Panel', {
+	store: hourIntervalStore,
+	columns: [
+	    {text: "Project", flex: 1, dataIndex: 'project_id', renderer: projectRenderer},
+	    {text: "Start", flex: 1, dataIndex: 'interval_start', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s') },
+	    {text: "End", flex: 1, dataIndex: 'interval_end', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s') },
+	    {text: "Note", flex: 1, dataIndex: 'note'}
+	],
+	columnLines: true,
+	enableLocking: true,
+	collapsible: false,
+	title: 'Expander Rows in a Collapsible Grid with lockable columns',
+	emptyText: 'No data yet - please click on one of the tasks at the left',
+	iconCls: 'icon-grid',
+	margin: '0 0 20 0'
+    });
 
 
     var ganttRightSide = Ext.create('Ext.panel.Panel', {
@@ -60,7 +70,7 @@ function launchTreePanel(){
             bodyPadding: 0
         },
         items: [
-		grid1
+	    hourIntervalGrid
         ]
     });
 
@@ -103,14 +113,14 @@ function launchTreePanel(){
 Ext.onReady(function() {
     Ext.QuickTips.init();
 
-    var statusStore = Ext.create('PO.store.project.ProjectStatusStore');
     var taskTreeStore = Ext.create('PO.store.timesheet.TaskTreeStore');
+    var hourIntervalStore = Ext.create('PO.store.timesheet.HourIntervalStore');
 
     // Use a "store coodinator" in order to launchTreePanel() only
     // if all stores have been loaded:
     var coordinator = Ext.create('PO.controller.StoreLoadCoordinator', {
         stores: [
-            'projectStatusStore', 
+            'hourIntervalStore', 
             'taskTreeStore'
         ],
         listeners: {
@@ -131,6 +141,16 @@ Ext.onReady(function() {
     taskTreeStore.load({
         callback: function() {
             console.log('PO.store.timesheet.TaskTreeStore: loaded');
+        }
+    });
+
+
+    // Load stores that need parameters
+    hourIntervalStore.getProxy().extraParams = { project_id: @project_id@, user_id: @current_user_id@, format: 'json' };
+    // hourIntervalStore.getProxy().extraParams = { project_id: 0, user_id: 0, format: 'json' };
+    hourIntervalStore.load({
+        callback: function() {
+            console.log('PO.store.timesheet.HourIntervalStore: loaded');
         }
     });
 
