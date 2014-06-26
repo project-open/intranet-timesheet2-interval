@@ -30,8 +30,8 @@ function launchTreePanel(){
     var hourIntervalStore = Ext.StoreManager.get('hourIntervalStore');
     var taskTreeStore = Ext.StoreManager.get('taskTreeStore');
     var ganttTreePanel = Ext.create('PO.view.gantt.GanttTreePanel', {
-        width:		300,
-        region:		'west',
+        width: 300,
+        region: 'west',
     });
 
     // -----------------------------------------------------------------------
@@ -45,6 +45,9 @@ function launchTreePanel(){
 
     var hourIntervalGrid = Ext.create('Ext.grid.Panel', {
 	store: hourIntervalStore,
+	layout: 'fit',
+        region: 'center',
+
 	columns: [
 	    {text: "Project", flex: 1, dataIndex: 'project_id', renderer: hourIntervalGridProjectRenderer},
 	    {text: "Start", flex: 1, dataIndex: 'interval_start', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s') },
@@ -55,37 +58,22 @@ function launchTreePanel(){
 	enableLocking: true,
 	collapsible: false,
 	title: 'Expander Rows in a Collapsible Grid with lockable columns',
+	header: false,
 	emptyText: 'No data yet - please click on one of the tasks at the left',
 	iconCls: 'icon-grid',
 	margin: '0 0 20 0'
     });
 
-    var ganttRightSide = Ext.create('Ext.panel.Panel', {
-        title: false,
-        layout: 'fit',
-        region: 'center',
-        collapsible: false,
-        defaults: {                                                  // These defaults produce a bar to resize the timeline
-            collapsible: true,
-            split: true,
-            bodyPadding: 0
-        },
-        items: [
-	    hourIntervalGrid
-        ]
-    });
-
-
     // -----------------------------------------------------------------------
-    // Outer Gantt editor jointing the two parts (TreePanel + Draw)
+    // Outer Gantt editor jointing the two parts (TreePanel + Grid)
     var screenSize = Ext.getBody().getViewSize();    // Size calculation based on specific ]po[ layout
     var sideBarSize = Ext.get('sidebar').getSize();
     var width = screenSize.width - sideBarSize.width - 95;
     var height = screenSize.height - 280;
 
     Ext.define('PO.view.timesheet.HourIntervalButtonPanel', {
-	extend:				'Ext.panel.Panel',
-	alias:				'ganttButtonPanel',
+	extend: 'Ext.panel.Panel',
+	alias: 'ganttButtonPanel',
 	width: 900,
 	height: 500,
 	layout: 'border',
@@ -94,70 +82,26 @@ function launchTreePanel(){
 	    split: true,
 	    bodyPadding: 0
 	},
-	tbar: [
-	    {
-		text: 'OK',
-		icon: '/intranet/images/navbar_default/disk.png',
-		tooltip: 'Save the project to the ]po[ back-end',
-		id: 'buttonSave'
-	    }, {
-		icon: '/intranet/images/navbar_default/folder_go.png',
-		tooltip: 'Load a project from he ]po[ back-end',
-		id: 'buttonLoad'
-	    }, {
-		xtype: 'tbseparator' 
-	    }, {
-		icon: '/intranet/images/navbar_default/add.png',
-		tooltip: 'Add a new task',
-		id: 'buttonAdd'
-	    }, {
-		icon: '/intranet/images/navbar_default/delete.png',
-		tooltip: 'Delete a task',
-		id: 'buttonDelete'
-	    }, {
-		xtype: 'tbseparator' 
-	    }, {
-		icon: '/intranet/images/navbar_default/arrow_left.png',
-		tooltip: 'Reduce Indent',
-		id: 'buttonReduceIndent'
-	    }, {
-		icon: '/intranet/images/navbar_default/arrow_right.png',
-		tooltip: 'Increase Indent',
-		id: 'buttonIncreaseIndent'
-	    }, {
-		xtype: 'tbseparator'
-	    }, {
-		icon: '/intranet/images/navbar_default/link_add.png',
-		tooltip: 'Add dependency',
-		id: 'buttonAddDependency'
-	    }, {
-		icon: '/intranet/images/navbar_default/link_break.png',
-		tooltip: 'Break dependency',
-		id: 'buttonBreakDependency'
-	    }, '->' , {
-		icon: '/intranet/images/navbar_default/zoom_in.png',
-		tooltip: 'Zoom in time axis',
-		id: 'buttonZoomIn'
-	    }, {
-		icon: '/intranet/images/navbar_default/zoom_out.png',
-		tooltip: 'Zoom out of time axis',
-		id: 'buttonZoomOut'
-	    }, {
-		icon: '/intranet/images/navbar_default/wrench.png',
-		tooltip: 'Settings',
-		id: 'buttonSettings'
-	    }
-	],
-	renderTo: '@task_editor_id@'
-
+	tbar: [{
+	    icon: '/intranet/images/navbar_default/clock_go.png',
+	    tooltip: 'Start logging',
+	    id: 'buttonStartLogging',
+	    disabled: true
+	}, {
+	    icon: '/intranet/images/navbar_default/clock_stop.png',
+	    tooltip: 'Stop logging',
+	    id: 'buttonStopLogging',
+	    disabled: true
+	}]
     });
 
+    // Use the button panel as a container for the task tree and the hour grid
     var hourIntervalButtonPanel = Ext.create('PO.view.timesheet.HourIntervalButtonPanel', {
         width: width,
         height: height,
         resizable: true,				// Add handles to the panel, so the user can change size
         items: [
-            ganttRightSide,
+            hourIntervalGrid,
             ganttTreePanel
         ],
         renderTo: '@task_editor_id@'
@@ -172,152 +116,85 @@ function launchTreePanel(){
 	extend: 'Ext.app.Controller',
 
 	// Variables
-	debug: false,
+	debug: true,
+
+	'selectedTask': null,			// Task selected by selection model
+	'loggingTask': null,			// contains the task on which hours are logged or null otherwise
+	'loggingStartDate': null,			// contains the time when "start" was pressed or null otherwise
+
+	// Parameters
 	'renderDiv': null,
 	'hourIntervalButtonPanel': null,
 	'hourIntervalController': null,
+	'hourIntervalGrid': null,
 	'ganttTreePanel': null,
-	'ganttDrawComponent': null,
-	'ganttTimeline': null,                                        // x3 time axis
 
-	refs: [
-            { ref: 'ganttTreePanel', selector: '#ganttTreePanel' }
-	],
-	
+	// Setup the various listeners so that everything gets concentrated here on
+	// this controller.
 	init: function() {
 	    var me = this;
             if (me.debug) { console.log('PO.controller.timesheet.HourIntervalController: init'); }
 
             this.control({
-		'#buttonLoad': { click: this.onButtonLoad },
-		'#buttonSave': { click: this.onButton },
-		'#buttonAdd': { click: { fn: me.ganttTreePanel.onButtonAdd, scope: me.ganttTreePanel }},
-		'#buttonDelete': { click: { fn: me.ganttTreePanel.onButtonDelete, scope: me.ganttTreePanel }},
-		'#buttonReduceIndent': { click: { fn: me.ganttTreePanel.onButtonReduceIndent, scope: me.ganttTreePanel }},
-		'#buttonIncreaseIndent': { click: { fn: me.ganttTreePanel.onButtonIncreaseIndent, scope: me.ganttTreePanel }},
-		'#buttonAddDependency': { click: this.onButton },
-		'#buttonBreakDependency': { click: this.onButton },
-		'#buttonZoomIn': { click: this.onZoomIn },
-		'#buttonZoomOut': { click: this.onZoomOut },
-		'#buttonSettings': { click: this.onButton },
+		'#buttonStartLogging': { click: this.onButtonStartLogging },
+		'#buttonStopLogging': { click: this.onButtonStopLogging },
 		scope: me.ganttTreePanel
             });
 
-            // Listen to changes in the selction model in order to enable/disable the "delete" button.
-            me.ganttTreePanel.on('selectionchange', this.onTreePanelSelectionChange, this);
+            // Listen to changes in the selction model in order to enable/disable the start/stop buttons
+            me.ganttTreePanel.on('selectionchange', this.onTreePanelSelectionChange, me);
 
             // Listen to a click into the empty space below the tree in order to add a new task
             me.ganttTreePanel.on('containerclick', me.ganttTreePanel.onContainerClick, me.ganttTreePanel);
 
-            // Listen to special keys
-            me.ganttTreePanel.on('cellkeydown', this.onCellKeyDown, me.ganttTreePanel);
-            me.ganttTreePanel.on('beforecellkeydown', this.onBeforeCellKeyDown, me.ganttTreePanel);
-
-	    // Deal with mouse move events from both surfaces
-	    me.ganttTimeline.on('move', this.onTimelineMove, me);
-	    me.ganttDrawComponent.on('move', this.onDrawComponentMove, me);
-
             return this;
 	},
 
-	onButtonLoad: function() {
-            console.log('GanttButtonController.ButtonLoad');
+	onButtonStartLogging: function() {
+            console.log('GanttButtonController.ButtonStartLogging');
+            var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+            var buttonStopLogging = Ext.getCmp('buttonStopLogging');
+	    buttonStartLogging.disable();
+	    buttonStopLogging.enable();
+
+	    // Start logging
+	    this.loggingTask = selectedTask;
+	    this.loggingStartTime = new Date();
 	},
 
-	onButtonSave: function() {
-            console.log('GanttButtonController.ButtonSave');
-	},
+	onButtonStopLogging: function() {
+            console.log('GanttButtonController.ButtonStopLogging');
+            var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+            var buttonStopLogging = Ext.getCmp('buttonStopLogging');
+	    buttonStartLogging.disable();
+	    buttonStopLogging.disable();
 
-	onZoomIn: function() {
-            console.log('GanttButtonController.onZoomIn');
-	    this.ganttDrawComponent.onZoomIn();
-	    this.ganttTimeline.onZoomIn();
-	},
-
-	onZoomOut: function() {
-            console.log('GanttButtonController.onZoomOut');
-	    this.ganttDrawComponent.onZoomOut();
-	    this.ganttTimeline.onZoomOut();
-	},
-
-	/**
-	 * The user is drag-and-dropping the Timeline around.
-	 * Now update the main DrawComponent accordingly.
-	 */
-	onTimelineMove: function(dist) {
-            // console.log('GanttButtonController.onTimelineMove: dist='+dist);
-	    var axisFactor = this.ganttTimeline.axisFactor;
-            this.ganttDrawComponent.translate(dist * axisFactor);	// Move the DrawComponent multiplied
+	    // Stop logging
+	    this.loggingTask = null;
+	    this.loggingStartTime = null;
 	},
 
 	/**
-	 * The user is drag-and-dropping the main DrawComponent around.
-	 * Now move the Timeline accordingly.
-	 */
-	onDrawComponentMove: function(dist) {
-            console.log('GanttButtonController.onDrawComponentMove: dist='+dist);
-	    var axisFactor = this.ganttTimeline.axisFactor;
-            this.ganttTimeline.translate(dist / axisFactor);	// Move the Timeline by a fraction
-	},
-
-	/**
-	 * Control the enabled/disabled status of the (-) (Delete) button
+	 * Control the enabled/disabled status of the Start/Stop logging buttons
 	 */
 	onTreePanelSelectionChange: function(view, records) {
             if (this.debug) { console.log('GanttButtonController.onTreePanelSelectionChange'); }
-            var buttonDelete = Ext.getCmp('buttonDelete');
 
-            if (1 == records.length) {            // Exactly one record enabled
+	    // Skip changes on the selection model while logging hours
+	    if (this.loggingTask) { return; }
+
+            var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+
+	    // Not logging already - enable the "start" button
+	    if (1 == records.length) {			// Exactly one record enabled
 		var record = records[0];
-		buttonDelete.setDisabled(!record.isLeaf());
-            } else {                              // Zero or two or more records enabled
-		buttonDelete.setDisabled(true);
-            }
+		selectedTask = record;			// Remember which task is selected
+		var isLeaf = record.isLeaf();
+		buttonStartLogging.setDisabled(!isLeaf);
+	    } else {					// Zero or two or more records enabled
+		buttonStartLogging.setDisabled(true);
+	    }		
 	},
-
-	/**
-	 * Disable default tree key actions
-	 */
-	onBeforeCellKeyDown: function(me, htmlTd, cellIndex, record, htmlTr, rowIndex, e, eOpts ) {
-            var keyCode = e.getKey();
-            var keyCtrl = e.ctrlKey;
-            if (this.debug) { console.log('GanttButtonController.onBeforeCellKeyDown: code='+keyCode+', ctrl='+keyCtrl); }
-            var panel = this;
-            switch (keyCode) {
-            case 8: 				// backspace 8
-		panel.onButtonDelete();
-		break;
-            case 37: 				// cursor left
-		if (keyCtrl) {
-        	    panel.onButtonReduceIndent();
-        	    return false;                   // Disable default action (fold tree)
-		}
-		break;
-            case 39: 				// cursor right
-		if (keyCtrl) {
-        	    panel.onButtonIncreaseIndent();
-        	    return false;                   // Disable default action (unfold tree)
-		}
-		break;
-            case 45: 				// insert 45
-		panel.onButtonAdd();
-		break;
-            case 46: 				// delete 46
-		panel.onButtonDelete();
-		break;
-            }
-
-            return true;                            // Enable default TreePanel actions for keys
-	},
-
-	/**
-	 * Handle various key actions
-	 */
-	onCellKeyDown: function(table, htmlTd, cellIndex, record, htmlTr, rowIndex, e, eOpts) {
-            var keyCode = e.getKey();
-            var keyCtrl = e.ctrlKey;
-	},
-
 
 	/**
 	 * The windows as a whole was resized
@@ -365,11 +242,10 @@ function launchTreePanel(){
     });
 
     var sideBarTab = Ext.get('sideBarTab');
-    var renderDiv = Ext.get('@task_editor_id@');
     var hourIntervalController = Ext.create('PO.controller.timesheet.HourIntervalController', {
-        'renderDiv': renderDiv,
         'hourIntervalButtonPanel': hourIntervalButtonPanel,
         'hourIntervalController': hourIntervalController,
+	'hourIntervalGrid': hourIntervalGrid,
         'ganttTreePanel': ganttTreePanel
     });
     hourIntervalController.init(this).onLaunch(this);
