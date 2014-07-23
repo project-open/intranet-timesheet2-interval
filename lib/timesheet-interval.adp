@@ -6,6 +6,7 @@
 Ext.Loader.setPath('PO.model', '/sencha-core/model');
 Ext.Loader.setPath('PO.store', '/sencha-core/store');
 Ext.Loader.setPath('PO.class', '/sencha-core/class');
+Ext.Loader.setPath('Ext.ux', '/sencha-core/ux');
 Ext.Loader.setPath('PO.view.gantt', '/sencha-core/view/gantt');
 Ext.Loader.setPath('PO.controller', '/sencha-core/controller');
 
@@ -19,7 +20,8 @@ Ext.require([
     'PO.model.timesheet.HourInterval',
     'PO.store.timesheet.HourIntervalStore',
     'PO.store.timesheet.TaskTreeStore',
-    'PO.store.timesheet.HourIntervalActivityStore'
+    'PO.store.timesheet.HourIntervalActivityStore',
+    'Ext.ux.TreeCombo'
 ]);
 
 
@@ -43,17 +45,40 @@ function launchTreePanel(){
 	return projectName;
     };
 
+    var rowEditing = Ext.create('Ext.grid.plugin.RowEditing', {
+	clicksToMoveEditor: 2,
+	listeners: {
+	    edit: function(editor, context, eOpts) {
+		context.record.save();
+	    }
+	}
+    });
+
     var hourIntervalGrid = Ext.create('Ext.grid.Panel', {
 	store: hourIntervalStore,
 	layout: 'fit',
         region: 'center',
-
-	columns: [
-	    {text: "Project", flex: 1, dataIndex: 'project_id', renderer: hourIntervalGridProjectRenderer},
-	    {text: "Start", flex: 1, dataIndex: 'interval_start', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s') },
-	    {text: "End", flex: 1, dataIndex: 'interval_end', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s') },
-	    {text: "Note", flex: 1, dataIndex: 'note'}
-	],
+	plugins: [rowEditing],
+	columns: [{
+	    text: "Project", flex: 1, dataIndex: 'project_id', renderer: hourIntervalGridProjectRenderer,
+	    editor: {
+		xtype: 'treecombo',
+		store: taskTreeStore,
+		rootVisible: false,
+		displayField: 'project_name',
+		valueField: 'id',
+		allowBlank: false
+	    }
+	}, {
+	    text: "Start", flex: 1, dataIndex: 'interval_start', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+	    editor: { allowBlank: false }
+	}, {
+	    text: "End", flex: 1, dataIndex: 'interval_end', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
+	    editor: { allowBlank: false }
+	}, {
+	    text: "Note", flex: 1, dataIndex: 'note',
+	    editor: { allowBlank: false }
+	}],
 	columnLines: true,
 	enableLocking: true,
 	collapsible: false,
@@ -121,6 +146,7 @@ function launchTreePanel(){
 	'selectedTask': null,			// Task selected by selection model
 	'loggingTask': null,			// contains the task on which hours are logged or null otherwise
 	'loggingStartDate': null,			// contains the time when "start" was pressed or null otherwise
+	'loggingInterval': null,			// the hourInterval object created when logging
 
 	// Parameters
 	'renderDiv': null,
@@ -144,12 +170,27 @@ function launchTreePanel(){
             // Listen to changes in the selction model in order to enable/disable the start/stop buttons
             me.ganttTreePanel.on('selectionchange', this.onTreePanelSelectionChange, me);
 
-            // Listen to a click into the empty space below the tree in order to add a new task
-            me.ganttTreePanel.on('containerclick', me.ganttTreePanel.onContainerClick, me.ganttTreePanel);
+            // Listen to a click into the empty space below the grid entries in order to start creating a new entry
+            me.hourIntervalGrid.on('containerclick', this.onGridContainerClick, me);
 
             return this;
 	},
 
+	// Click into the empty space below the grid entries in order to start creating a new entry
+	onGridContainerClick: function() {
+            console.log('GanttButtonController.GridContainerClick');
+	    var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+	    var disabled = buttonStartLogging.disabled;
+	    if (!disabled) {
+		this.onButtonStartLogging();
+	    }
+	},
+
+	/*
+	 * Start logging the time.
+	 * Before calling this procedure, the user must have selected a single
+	 * leaf in the task tree for logging hours.
+	 */
 	onButtonStartLogging: function() {
             console.log('GanttButtonController.ButtonStartLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
@@ -157,17 +198,40 @@ function launchTreePanel(){
 	    buttonStartLogging.disable();
 	    buttonStopLogging.enable();
 
+	    rowEditing.cancelEdit();
+
 	    // Start logging
 	    this.loggingTask = selectedTask;
 	    this.loggingStartTime = new Date();
+
+	    var hourInterval = new Ext.create('PO.model.timesheet.HourInterval', {
+		user_id: @current_user_id@,
+		project_id: selectedTask.get('id'),
+		interval_start: this.loggingStartTime
+		// inverval_end: this.loggingStartTime
+	    });
+
+	    // Remember the new interval, add to store and start editing
+	    this.loggingInterval = hourInterval;
+	    hourIntervalStore.add(hourInterval);
+	    //var rowIndex = hourIntervalStore.count() -1;
+	    // rowEditing.startEdit(0, 0);
+
 	},
 
 	onButtonStopLogging: function() {
             console.log('GanttButtonController.ButtonStopLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
-	    buttonStartLogging.disable();
+	    buttonStartLogging.enable();
 	    buttonStopLogging.disable();
+
+	    // Complete the hourInterval created when starting to log
+	    this.loggingInterval.set('interval_end', new Date());
+	    var rowIndex = hourIntervalStore.count() -1;
+	    rowEditing.startEdit(rowIndex, 3);
+
+	    this.loggingInterval.save();
 
 	    // Stop logging
 	    this.loggingTask = null;
@@ -191,6 +255,15 @@ function launchTreePanel(){
 		selectedTask = record;			// Remember which task is selected
 		var isLeaf = record.isLeaf();
 		buttonStartLogging.setDisabled(!isLeaf);
+
+		// load the list of hourIntervals into the hourIntervalGrid
+		var projectId = record.get('id');
+		hourIntervalStore.getProxy().extraParams = { project_id: projectId, user_id: @current_user_id@, format: 'json' };
+		hourIntervalStore.load({
+		    callback: function() {
+			console.log('PO.store.timesheet.HourIntervalStore: loaded');
+		    }
+		});
 	    } else {					// Zero or two or more records enabled
 		buttonStartLogging.setDisabled(true);
 	    }		

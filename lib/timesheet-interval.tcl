@@ -25,3 +25,6 @@ set task_editor_rand [expr round(rand() * 100000000.0)]
 set task_editor_id "task_editor_$task_editor_rand"
 
 
+
+set please_add_note_required_l10n [lang::message::lookup "" intranet-timesheet2-inverval.Please_add_a_note_required "Please add a note (required)"]
+

@@ -82,6 +82,100 @@ create index im_hour_intervals_interval_start_idx on im_hour_intervals(interval_
 
 
 -- ------------------------------------------------------------
+-- Trigger for synchronization between intervals and hours
+-- ------------------------------------------------------------
+
+-- Create a new im_hour row for the interval or update 
+-- an existing one.
+create or replace function im_hour_interval_update_im_hours (integer, integer, date)
+returns integer as $body$
+DECLARE
+	p_user_id		alias for $1;
+	p_project_id		alias for $2;
+	p_day			alias for $3;
+
+	v_hour_id		integer;
+	v_sum_hours		numeric;
+	v_sum_notes		varchar;
+	row			record;
+BEGIN
+	-- Check if there is already an im_hours entry
+	select h.hour_id into v_hour_id
+	from   im_hours h
+	where  h.user_id = p_user_id and
+	       h.project_id = p_project_id and
+	       h.day = p_day;
+
+	-- Create a new entry if there wasnt one before
+	IF v_hour_id is null THEN
+		v_hour_id := nextval('im_hours_seq');
+		RAISE NOTICE 'im_hour_interval_insert_tr: About to insert a new im_hour with ID=%', v_hour_id;
+		insert into im_hours (
+			hour_id, user_id, project_id, day, hours, note
+		) values (
+			v_hour_id, p_user_id, p_project_id, p_day, 0, ''
+		);
+	END IF;
+
+	-- Sum up all interval properties into one hour row
+	v_sum_hours := 0.0;
+	v_sum_notes := '';
+	FOR row IN
+		select	*
+		from	im_hour_intervals
+		where	user_id = p_user_id and
+			project_id = p_project_id and
+			interval_start::date = p_day
+	LOOP
+		v_sum_hours := v_sum_hours + coalesce(extract(epoch from row.interval_end - row.interval_start) / 3600.0, 0.0);
+		v_sum_notes := v_sum_notes || coalesce(row.note, '') || E'\n';
+	END LOOP;
+
+	-- Update the im_hours entry with the sum of the values
+	update	im_hours
+	set	hours = v_sum_hours, note = v_sum_notes
+	where	hour_id = v_hour_id;
+	
+	return 0;
+END;$body$ language 'plpgsql';
+
+
+create or replace function im_hour_interval_insert_tr ()
+returns trigger as $body$
+BEGIN
+	PERFORM im_hour_interval_update_im_hours (new.user_id, new.project_id, new.interval_start::date);
+	return new;
+END;$body$ language 'plpgsql';
+
+
+create or replace function im_hour_interval_update_tr ()
+returns trigger as $body$
+BEGIN
+	PERFORM im_hour_interval_update_im_hours (new.user_id, new.project_id, new.interval_start::date);
+	IF new.interval_start::date != old.interval_start::date THEN
+		PERFORM im_hour_interval_update_im_hours (old.user_id, old.project_id, old.interval_start::date);
+	END IF;
+	return new;
+END;$body$ language 'plpgsql';
+
+
+create or replace function im_hour_interval_delete_tr ()
+returns trigger as $body$
+BEGIN
+	PERFORM im_hour_interval_update_im_hours (old.user_id, old.project_id, old.interval_start::date);
+	return old;
+END;$body$ language 'plpgsql';
+
+
+create trigger im_hour_interval_insert_tr after insert on im_hour_intervals for each row execute procedure im_hour_interval_insert_tr();
+create trigger im_hour_interval_update_tr after update on im_hour_intervals for each row execute procedure im_hour_interval_update_tr();
+create trigger im_hour_interval_delete_tr after delete on im_hour_intervals for each row execute procedure im_hour_interval_delete_tr();
+
+
+
+
+
+-- ------------------------------------------------------------
 -- Portlet
 -- ------------------------------------------------------------
 
