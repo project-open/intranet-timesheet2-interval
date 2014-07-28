@@ -117,22 +117,25 @@ function launchTreePanel(){
 	    tooltip: 'Stop logging',
 	    id: 'buttonStopLogging',
 	    disabled: true
+	}, {
+	    icon: '/intranet/images/navbar_default/clock_delete.png',
+	    tooltip: 'Cancel logging',
+	    id: 'buttonCancelLogging',
+	    disabled: true
 	}]
     });
 
     // Use the button panel as a container for the task tree and the hour grid
     var hourIntervalButtonPanel = Ext.create('PO.view.timesheet.HourIntervalButtonPanel', {
+        renderTo: '@task_editor_id@',
         width: width,
         height: height,
         resizable: true,				// Add handles to the panel, so the user can change size
         items: [
             hourIntervalGrid,
             ganttTreePanel
-        ],
-        renderTo: '@task_editor_id@'
+        ]
     });
-
-
 
     // -----------------------------------------------------------------------
     // Controller for interaction between Tree and Grid
@@ -164,6 +167,7 @@ function launchTreePanel(){
             this.control({
 		'#buttonStartLogging': { click: this.onButtonStartLogging },
 		'#buttonStopLogging': { click: this.onButtonStopLogging },
+		'#buttonCancelLogging': { click: this.onButtonCancelLogging },
 		scope: me.ganttTreePanel
             });
 
@@ -173,7 +177,19 @@ function launchTreePanel(){
             // Listen to a click into the empty space below the grid entries in order to start creating a new entry
             me.hourIntervalGrid.on('containerclick', this.onGridContainerClick, me);
 
+	    // Catch a global Esc button in order to abort logging
+	    // For some reaons this doesn't work on the level of the HourButtonPanel, so
+	    // we go for the global "window" here.
+	    Ext.EventManager.on(window, 'keydown', this.onKeyEsc, me);
+
+
             return this;
+	},
+
+	// Esc (Escape) button pressed somewhere in the application window
+	onKeyEsc: function() {
+            console.log('GanttButtonController.onKeyEsc');
+	    this.onButtonCancelLogging();
 	},
 
 	// Click into the empty space below the grid entries in order to start creating a new entry
@@ -195,8 +211,10 @@ function launchTreePanel(){
             console.log('GanttButtonController.ButtonStartLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
+            var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
 	    buttonStartLogging.disable();
 	    buttonStopLogging.enable();
+	    buttonCancelLogging.enable();
 
 	    rowEditing.cancelEdit();
 
@@ -223,8 +241,10 @@ function launchTreePanel(){
             console.log('GanttButtonController.ButtonStopLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
+            var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
 	    buttonStartLogging.enable();
 	    buttonStopLogging.disable();
+	    buttonCancelLogging.disable();
 
 	    // Complete the hourInterval created when starting to log
 	    this.loggingInterval.set('interval_end', new Date());
@@ -232,6 +252,24 @@ function launchTreePanel(){
 	    rowEditing.startEdit(rowIndex, 3);
 
 	    this.loggingInterval.save();
+
+	    // Stop logging
+	    this.loggingTask = null;
+	    this.loggingStartTime = null;
+	},
+
+	onButtonCancelLogging: function() {
+            console.log('GanttButtonController.ButtonCancelLogging');
+            var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+            var buttonStopLogging = Ext.getCmp('buttonStopLogging');
+            var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
+	    buttonStartLogging.enable();
+	    buttonStopLogging.disable();
+	    buttonCancelLogging.disable();
+
+	    // Delete the started line
+	    rowEditing.cancelEdit();
+	    hourIntervalStore.remove(this.loggingInterval);
 
 	    // Stop logging
 	    this.loggingTask = null;
@@ -268,6 +306,18 @@ function launchTreePanel(){
 		buttonStartLogging.setDisabled(true);
 	    }		
 	},
+
+
+	/**
+	 * Handle various key actions
+	 */
+	onCellKeyDown: function(table, htmlTd, cellIndex, record, htmlTr, rowIndex, e, eOpts) {
+            console.log('GanttButtonController.onCellKeyDown');
+            var keyCode = e.getKey();
+            var keyCtrl = e.ctrlKey;
+            console.log('GanttButtonController.onCellKeyDown: code='+keyCode+', ctrl='+keyCtrl);
+	},
+
 
 	/**
 	 * The windows as a whole was resized
@@ -314,6 +364,7 @@ function launchTreePanel(){
 	
     });
 
+
     var sideBarTab = Ext.get('sideBarTab');
     var hourIntervalController = Ext.create('PO.controller.timesheet.HourIntervalController', {
         'hourIntervalButtonPanel': hourIntervalButtonPanel,
@@ -322,6 +373,11 @@ function launchTreePanel(){
         'ganttTreePanel': ganttTreePanel
     });
     hourIntervalController.init(this).onLaunch(this);
+
+    // Testing events
+    hourIntervalButtonPanel.fireEvent('keypress');
+
+
 
     // -----------------------------------------------------------------------
     // Handle collapsable side menu
