@@ -34,3 +34,18 @@ ad_proc -public im_timesheet_interval_portlet {
     set result [ad_parse_template -params $params "/packages/intranet-timesheet2-interval/lib/timesheet-interval"]
     return [string trim $result]
 }
+
+
+
+ad_proc -public im_hour_interval_nuke {
+    {-current_user_id ""}
+    rest_oid
+} {
+    Delete a hour interval object. 
+    This procedure is called from the intranet-rest interface
+    after receiving a DELETE HTTP verb
+} {
+    # hour_interval is not a real object, so we can just delete from the table
+    db_dml delete_hour_interval "delete from im_hour_intervals where interval_id = :rest_oid"
+    return $rest_oid
+}

@@ -109,18 +109,23 @@ function launchTreePanel(){
 	},
 	tbar: [{
 	    icon: '/intranet/images/navbar_default/clock_go.png',
-	    tooltip: 'Start logging',
+	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Start_logging "Start logging"] %>',
 	    id: 'buttonStartLogging',
 	    disabled: true
 	}, {
 	    icon: '/intranet/images/navbar_default/clock_stop.png',
-	    tooltip: 'Stop logging',
+	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Stop_logging "Stop logging and save"] %>',
 	    id: 'buttonStopLogging',
 	    disabled: true
 	}, {
 	    icon: '/intranet/images/navbar_default/clock_delete.png',
-	    tooltip: 'Cancel logging',
+	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Cancel_logging "Cancel logging"] %>',
 	    id: 'buttonCancelLogging',
+	    disabled: true
+	}, {
+	    icon: '/intranet/images/navbar_default/delete.png',
+	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Delete_logging "Delete entry"] %>',
+	    id: 'buttonDeleteLogging',
 	    disabled: true
 	}]
     });
@@ -168,6 +173,7 @@ function launchTreePanel(){
 		'#buttonStartLogging': { click: this.onButtonStartLogging },
 		'#buttonStopLogging': { click: this.onButtonStopLogging },
 		'#buttonCancelLogging': { click: this.onButtonCancelLogging },
+		'#buttonDeleteLogging': { click: this.onButtonDeleteLogging },
 		scope: me.ganttTreePanel
             });
 
@@ -177,19 +183,26 @@ function launchTreePanel(){
             // Listen to a click into the empty space below the grid entries in order to start creating a new entry
             me.hourIntervalGrid.on('containerclick', this.onGridContainerClick, me);
 
-	    // Catch a global Esc button in order to abort logging
-	    // For some reaons this doesn't work on the level of the HourButtonPanel, so
-	    // we go for the global "window" here.
-	    Ext.EventManager.on(window, 'keydown', this.onKeyEsc, me);
+            // Listen to changes in the selction model in order to enable/disable the start/stop buttons
+            me.hourIntervalGrid.on('selectionchange', this.onGridSelectionChange, me);
 
+
+	    // Catch a global key strokes. This is used to abort entry with Esc.
+	    // For some reaons this doesn't work on the level of the HourButtonPanel, so we go for the global "window"
+	    Ext.EventManager.on(window, 'keydown', this.onWindowKeyDown, me);
 
             return this;
 	},
 
 	// Esc (Escape) button pressed somewhere in the application window
-	onKeyEsc: function() {
-            console.log('GanttButtonController.onKeyEsc');
-	    this.onButtonCancelLogging();
+	onWindowKeyDown: function(e) {
+	    var keyCode = e.getKey();
+	    var keyCtrl = e.ctrlKey;
+            console.log('GanttButtonController.onWindowKeyDown: code='+keyCode+', ctrl='+keyCtrl);
+	    
+	    // cancel hour logging with Esc key
+	    if (27 == keyCode) { this.onButtonCancelLogging(); }
+	    if (46 == keyCode) { this.onButtonDeleteLogging(); }
 	},
 
 	// Click into the empty space below the grid entries in order to start creating a new entry
@@ -212,9 +225,11 @@ function launchTreePanel(){
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
+            var buttonDeleteLogging = Ext.getCmp('buttonDeleteLogging');
 	    buttonStartLogging.disable();
 	    buttonStopLogging.enable();
 	    buttonCancelLogging.enable();
+	    buttonDeleteLogging.disable();
 
 	    rowEditing.cancelEdit();
 
@@ -248,14 +263,18 @@ function launchTreePanel(){
 
 	    // Complete the hourInterval created when starting to log
 	    this.loggingInterval.set('interval_end', new Date());
-	    var rowIndex = hourIntervalStore.count() -1;
-	    rowEditing.startEdit(rowIndex, 3);
 
+	    // Not necesary anymore because the store is set to autosync?
 	    this.loggingInterval.save();
+	    rowEditing.cancelEdit();
 
 	    // Stop logging
 	    this.loggingTask = null;
 	    this.loggingStartTime = null;
+
+	    // Continue editing the task
+	    var rowIndex = hourIntervalStore.count() -1;
+	    rowEditing.startEdit(rowIndex, 3);
 	},
 
 	onButtonCancelLogging: function() {
@@ -276,17 +295,29 @@ function launchTreePanel(){
 	    this.loggingStartTime = null;
 	},
 
+	onButtonDeleteLogging: function() {
+            console.log('GanttButtonController.ButtonDeleteLogging');
+	    var records = hourIntervalGrid.getSelectionModel().getSelection();
+            // Not logging already - enable the "start" button
+            if (1 == records.length) {                  // Exactly one record enabled
+                var record = records[0];
+		hourIntervalStore.remove(record);
+		record.destroy();
+            }
+
+	    // Stop logging
+	    this.loggingTask = null;
+	    this.loggingStartTime = null;
+	},
+
 	/**
 	 * Control the enabled/disabled status of the Start/Stop logging buttons
 	 */
 	onTreePanelSelectionChange: function(view, records) {
             if (this.debug) { console.log('GanttButtonController.onTreePanelSelectionChange'); }
-
 	    // Skip changes on the selection model while logging hours
 	    if (this.loggingTask) { return; }
-
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
-
 	    // Not logging already - enable the "start" button
 	    if (1 == records.length) {			// Exactly one record enabled
 		var record = records[0];
@@ -305,6 +336,16 @@ function launchTreePanel(){
 	    } else {					// Zero or two or more records enabled
 		buttonStartLogging.setDisabled(true);
 	    }		
+	},
+
+	/**
+	 * Clicking around in the grid part of the screen,
+	 * Enable or disable the "Delete" button
+	 */
+	onGridSelectionChange: function(view, records) {
+            if (this.debug) { console.log('GanttButtonController.onGridSelectionChange'); }
+            var buttonDeleteLogging = Ext.getCmp('buttonDeleteLogging');
+	    buttonDeleteLogging.setDisabled(1 != records.length);
 	},
 
 
