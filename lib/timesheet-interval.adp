@@ -127,6 +127,32 @@ function launchTreePanel(){
 	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Delete_logging "Delete entry"] %>',
 	    id: 'buttonDeleteLogging',
 	    disabled: true
+	}, '-', {
+	    icon: '/intranet/images/navbar_default/arrow_left.png',
+	    id: 'buttonCalendarArrowLeft',
+	    handler: function() {
+		// move one day backward
+		var dateField = Ext.getCmp('datePicker');
+		var d = dateField.getValue();
+		d.setDate(d.getDate() - 1);
+		dateField.setValue(d);
+	    }
+	}, {
+	    xtype: 'datefield',
+	    id: 'datePicker',
+            name: 'from_date',
+	    value: new Date(),
+            maxValue: new Date()  // limited to the current date or prior
+	}, '', {
+	    icon: '/intranet/images/navbar_default/arrow_right.png',
+	    id: 'buttonCalendarArrowRight',
+	    handler: function() {
+		// move one day forward
+		var dateField = Ext.getCmp('datePicker');
+		var d = dateField.getValue();
+		d.setDate(d.getDate() + 1);
+		dateField.setValue(d);
+	    }
 	}]
     });
 
@@ -174,6 +200,7 @@ function launchTreePanel(){
 		'#buttonStopLogging': { click: this.onButtonStopLogging },
 		'#buttonCancelLogging': { click: this.onButtonCancelLogging },
 		'#buttonDeleteLogging': { click: this.onButtonDeleteLogging },
+		'#datePicker': { change: this.onDatePickerChange },
 		scope: me.ganttTreePanel
             });
 
@@ -186,13 +213,18 @@ function launchTreePanel(){
             // Listen to changes in the selction model in order to enable/disable the start/stop buttons
             me.hourIntervalGrid.on('selectionchange', this.onGridSelectionChange, me);
 
-
 	    // Catch a global key strokes. This is used to abort entry with Esc.
 	    // For some reaons this doesn't work on the level of the HourButtonPanel, so we go for the global "window"
 	    Ext.EventManager.on(window, 'keydown', this.onWindowKeyDown, me);
 
             return this;
 	},
+
+	// The user chose a different date
+	onDatePickerChange: function() {
+	    console.log('GanttButtonController.onDatePickerChange');
+	},
+
 
 	// Esc (Escape) button pressed somewhere in the application window
 	onWindowKeyDown: function(e) {
@@ -327,7 +359,13 @@ function launchTreePanel(){
 
 		// load the list of hourIntervals into the hourIntervalGrid
 		var projectId = record.get('id');
-		hourIntervalStore.getProxy().extraParams = { project_id: projectId, user_id: @current_user_id@, format: 'json' };
+		var date = Ext.getCmp('datePicker').getValue();
+
+		hourIntervalStore.getProxy().extraParams = { 
+		    project_id: projectId, 
+		    user_id: @current_user_id@, 
+		    format: 'json' 
+		};
 		hourIntervalStore.load({
 		    callback: function() {
 			console.log('PO.store.timesheet.HourIntervalStore: loaded');
