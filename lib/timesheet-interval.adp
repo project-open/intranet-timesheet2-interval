@@ -36,6 +36,19 @@ function launchTreePanel(){
         region: 'west',
     });
 
+
+    var timeEntryStore = [];
+    for (var i = 0; i < 24; i++) {
+	var ii = ""+i;
+	if (ii.length == 1) { ii = "0"+i; }
+	for (var m = 0; m < 60; m = m + 10 ) {
+	    var mm = ""+m;
+	    if (mm.length == 1) { mm = "0"+m; }
+	    timeEntryStore.push(ii + ':' + mm);
+	}
+    }
+
+
     // -----------------------------------------------------------------------
     // Renderer to display a project_id as project_name
     var hourIntervalGridProjectRenderer = function(project_id, metaData, record, rowIndex, colIndex, store, view) {
@@ -60,7 +73,10 @@ function launchTreePanel(){
         region: 'center',
 	plugins: [rowEditing],
 	columns: [{
-	    text: "Project", flex: 1, dataIndex: 'project_id', renderer: hourIntervalGridProjectRenderer,
+	    text: "Project", 
+	    flex: 1, 
+	    dataIndex: 'project_id', 
+	    renderer: hourIntervalGridProjectRenderer,
 	    editor: {
 		xtype: 'treecombo',
 		store: taskTreeStore,
@@ -70,14 +86,49 @@ function launchTreePanel(){
 		allowBlank: false
 	    }
 	}, {
-	    text: "Start", flex: 1, dataIndex: 'interval_start', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
-	    editor: { allowBlank: false }
+	    text: "Date",
+	    xtype: 'datecolumn',
+	    dataIndex: 'interval_date', 
+	    renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+	    editor: { 
+		xtype: 'datefield',
+		allowBlank: true 
+	    }
 	}, {
-	    text: "End", flex: 1, dataIndex: 'interval_end', renderer: Ext.util.Format.dateRenderer('Y-m-d H:i:s'),
-	    editor: { allowBlank: false }
+	    text: "Start Time",
+	    xtype: 'templatecolumn',
+	    tpl: '{interval_start_time}',
+	    dataIndex: 'interval_start_time',
+	    editor: {
+		xtype: 'combobox',
+                triggerAction: 'all',
+                selectOnTab: true,
+                store: timeEntryStore
+            }
+	}, {
+	    text: "End Time", 
+	    dataIndex: 'interval_end_time',
+	    editor: {
+		xtype: 'combobox',
+                triggerAction: 'all',
+                selectOnTab: true,
+                store: timeEntryStore
+            }
 	}, {
 	    text: "Note", flex: 1, dataIndex: 'note',
-	    editor: { allowBlank: false }
+	    editor: { allowBlank: true }
+	}, {
+	    text: "ID",
+	    dataIndex: 'id'
+	}, {
+	    text: "S",
+	    dataIndex: 'interval_start'
+	}, {
+	    text: "E",
+	    dataIndex: 'interval_end'
+	}, {
+	    text: "D",
+	    dataIndex: 'interval_date'
 	}],
 	columnLines: true,
 	enableLocking: true,
@@ -213,12 +264,70 @@ function launchTreePanel(){
             // Listen to changes in the selction model in order to enable/disable the start/stop buttons
             me.hourIntervalGrid.on('selectionchange', this.onGridSelectionChange, me);
 
+            // 
+            me.hourIntervalGrid.on('edit', this.onGridEdit, me);
+            me.hourIntervalGrid.on('beforeedit', this.onGridBeforeEdit, me);
+
+
 	    // Catch a global key strokes. This is used to abort entry with Esc.
 	    // For some reaons this doesn't work on the level of the HourButtonPanel, so we go for the global "window"
 	    Ext.EventManager.on(window, 'keydown', this.onWindowKeyDown, me);
 
             return this;
 	},
+
+
+        onGridBeforeEdit: function(editor, context, eOpts) {
+            console.log('GanttButtonController.onGridBeforeEdit');
+            console.log(context.record);
+	},
+
+        // 
+        onGridEdit: function(editor, context) {
+            console.log('GanttButtonController.onGridEdit');
+	    var rec = context.record;
+	    
+            var interval_date = rec.get('interval_date');
+            var interval_start = rec.get('interval_start');
+            var interval_start_time = rec.get('interval_start_time');
+            var interval_end = rec.get('interval_end');
+            var interval_end_time = rec.get('interval_end_time');
+            if ("" == interval_start_time) { interval_start_time = null; }
+            if ("" == interval_end_time) { interval_end_time = null; }
+
+	    // start == end => Delete the entry
+	    if (interval_start_time != null && interval_end_time != null) {
+		if (interval_start_time == interval_end_time) {
+		    rec.destroy();
+		    return;
+		}
+            }
+
+
+            if (interval_date != null) {
+		// The interval_date has been overwritten by the editor with a Date
+                var value = new Date(interval_date);
+                rec.set('interval_date', Ext.Date.format(value, 'Y-m-d'));
+            }
+
+            if (interval_date != null && interval_start_time != null) {
+                var value = new Date(interval_date);
+                value.setHours(interval_start_time.substring(0,2));
+                value.setMinutes(interval_start_time.substring(3,5));
+                rec.set('interval_start', Ext.Date.format(value, 'Y-m-d H:i:s'));
+            }
+
+            if (interval_date != null && interval_end_time != null) {
+                var value = new Date(interval_date);
+                value.setHours(interval_end_time.substring(0,2));
+                value.setMinutes(interval_end_time.substring(3,5));
+                rec.set('interval_end', Ext.Date.format(value, 'Y-m-d H:i:s'));
+            }
+
+	    rec.save();
+	    rec.commit();
+
+        },
 
 	// The user chose a different date
 	onDatePickerChange: function() {
@@ -267,13 +376,14 @@ function launchTreePanel(){
 
 	    // Start logging
 	    this.loggingTask = selectedTask;
-	    this.loggingStartTime = new Date();
+	    this.loggingStartDate = new Date();
 
 	    var hourInterval = new Ext.create('PO.model.timesheet.HourInterval', {
 		user_id: @current_user_id@,
 		project_id: selectedTask.get('id'),
-		interval_start: this.loggingStartTime
-		// inverval_end: this.loggingStartTime
+		interval_start: this.loggingStartDate,
+		interval_date: this.loggingStartDate,
+		interval_start_time: /\d\d:\d\d/.exec(""+new Date())[0]
 	    });
 
 	    // Remember the new interval, add to store and start editing
@@ -294,7 +404,7 @@ function launchTreePanel(){
 	    buttonCancelLogging.disable();
 
 	    // Complete the hourInterval created when starting to log
-	    this.loggingInterval.set('interval_end', new Date());
+	    this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
 
 	    // Not necesary anymore because the store is set to autosync?
 	    this.loggingInterval.save();
@@ -302,7 +412,7 @@ function launchTreePanel(){
 
 	    // Stop logging
 	    this.loggingTask = null;
-	    this.loggingStartTime = null;
+	    this.loggingStartDate = null;
 
 	    // Continue editing the task
 	    var rowIndex = hourIntervalStore.count() -1;
@@ -324,7 +434,7 @@ function launchTreePanel(){
 
 	    // Stop logging
 	    this.loggingTask = null;
-	    this.loggingStartTime = null;
+	    this.loggingStartDate = null;
 	},
 
 	onButtonDeleteLogging: function() {
@@ -339,7 +449,7 @@ function launchTreePanel(){
 
 	    // Stop logging
 	    this.loggingTask = null;
-	    this.loggingStartTime = null;
+	    this.loggingStartDate = null;
 	},
 
 	/**
@@ -361,11 +471,18 @@ function launchTreePanel(){
 		var projectId = record.get('id');
 		var date = Ext.getCmp('datePicker').getValue();
 
-		hourIntervalStore.getProxy().extraParams = { 
+/*		hourIntervalStore.getProxy().extraParams = { 
 		    project_id: projectId, 
 		    user_id: @current_user_id@, 
 		    format: 'json' 
 		};
+*/
+		hourIntervalStore.getProxy().extraParams = { 
+		    query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey betweeen main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
+		    user_id: @current_user_id@, 
+		    format: 'json' 
+		};
+
 		hourIntervalStore.load({
 		    callback: function() {
 			console.log('PO.store.timesheet.HourIntervalStore: loaded');
