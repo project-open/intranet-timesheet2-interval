@@ -478,7 +478,7 @@ function launchTreePanel(){
 		};
 */
 		hourIntervalStore.getProxy().extraParams = { 
-		    query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey betweeen main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
+		    query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey between main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
 		    user_id: @current_user_id@, 
 		    format: 'json' 
 		};
