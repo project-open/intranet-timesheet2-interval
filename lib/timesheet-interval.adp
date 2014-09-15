@@ -39,105 +39,93 @@ function launchTreePanel(){
 
     var timeEntryStore = [];
     for (var i = 0; i < 24; i++) {
-	var ii = ""+i;
-	if (ii.length == 1) { ii = "0"+i; }
-	for (var m = 0; m < 60; m = m + 10 ) {
-	    var mm = ""+m;
-	    if (mm.length == 1) { mm = "0"+m; }
-	    timeEntryStore.push(ii + ':' + mm);
-	}
+        var ii = ""+i;
+        if (ii.length == 1) { ii = "0"+i; }
+        for (var m = 0; m < 60; m = m + 10 ) {
+            var mm = ""+m;
+            if (mm.length == 1) { mm = "0"+m; }
+            timeEntryStore.push(ii + ':' + mm);
+        }
     }
 
 
     // -----------------------------------------------------------------------
     // Renderer to display a project_id as project_name
     var hourIntervalGridProjectRenderer = function(project_id, metaData, record, rowIndex, colIndex, store, view) {
-	var projectName = '#'+project_id;
-	var projectNode = taskTreeStore.getNodeById(project_id);
-	if (projectNode) { projectName = projectNode.get('project_name'); }
-	return projectName;
+        var projectName = '#'+project_id;
+        var projectNode = taskTreeStore.getNodeById(project_id);
+        if (projectNode) { projectName = projectNode.get('project_name'); }
+        return projectName;
     };
 
     var rowEditing = Ext.create('Ext.grid.plugin.RowEditing', {
-	clicksToMoveEditor: 2,
-	listeners: {
-	    edit: function(editor, context, eOpts) {
-		context.record.save();
-	    }
-	}
+        clicksToMoveEditor: 2,
+        listeners: {
+            edit: function(editor, context, eOpts) {
+                context.record.save();
+            }
+        }
     });
 
     var hourIntervalGrid = Ext.create('Ext.grid.Panel', {
-	store: hourIntervalStore,
-	layout: 'fit',
+        store: hourIntervalStore,
+        layout: 'fit',
         region: 'center',
-	plugins: [rowEditing],
-	columns: [{
-	    text: "Project", 
-	    flex: 1, 
-	    dataIndex: 'project_id', 
-	    renderer: hourIntervalGridProjectRenderer,
-	    editor: {
-		xtype: 'treecombo',
-		store: taskTreeStore,
-		rootVisible: false,
-		displayField: 'project_name',
-		valueField: 'id',
-		allowBlank: false
-	    }
-	}, {
-	    text: "Date",
-	    xtype: 'datecolumn',
-	    dataIndex: 'interval_date', 
-	    renderer: Ext.util.Format.dateRenderer('Y-m-d'),
-	    editor: { 
-		xtype: 'datefield',
-		allowBlank: true 
-	    }
-	}, {
-	    text: "Start Time",
-	    xtype: 'templatecolumn',
-	    tpl: '{interval_start_time}',
-	    dataIndex: 'interval_start_time',
-	    editor: {
-		xtype: 'combobox',
+        plugins: [rowEditing],
+        columns: [{
+            text: "Project", 
+            flex: 1, 
+            dataIndex: 'project_id', 
+            renderer: hourIntervalGridProjectRenderer,
+            editor: {
+                xtype: 'treecombo',
+                store: taskTreeStore,
+                rootVisible: false,
+                displayField: 'project_name',
+                valueField: 'id',
+                allowBlank: false
+            }
+        }, {
+            text: "Date",
+            xtype: 'datecolumn',
+            dataIndex: 'interval_date', 
+            renderer: Ext.util.Format.dateRenderer('Y-m-d'),
+            editor: { 
+                xtype: 'datefield',
+                allowBlank: true 
+            }
+        }, {
+            text: "Start Time",
+            xtype: 'templatecolumn',
+            tpl: '{interval_start_time}',
+            dataIndex: 'interval_start_time',
+            editor: {
+                xtype: 'combobox',
                 triggerAction: 'all',
                 selectOnTab: true,
                 store: timeEntryStore
             }
-	}, {
-	    text: "End Time", 
-	    dataIndex: 'interval_end_time',
-	    editor: {
-		xtype: 'combobox',
+        }, {
+            text: "End Time", 
+            dataIndex: 'interval_end_time',
+            editor: {
+                xtype: 'combobox',
                 triggerAction: 'all',
                 selectOnTab: true,
                 store: timeEntryStore
             }
-	}, {
-	    text: "Note", flex: 1, dataIndex: 'note',
-	    editor: { allowBlank: true }
-	}, {
-	    text: "ID",
-	    dataIndex: 'id'
-	}, {
-	    text: "S",
-	    dataIndex: 'interval_start'
-	}, {
-	    text: "E",
-	    dataIndex: 'interval_end'
-	}, {
-	    text: "D",
-	    dataIndex: 'interval_date'
-	}],
-	columnLines: true,
-	enableLocking: true,
-	collapsible: false,
-	title: 'Expander Rows in a Collapsible Grid with lockable columns',
-	header: false,
-	emptyText: 'No data yet - please click on one of the tasks at the left',
-	iconCls: 'icon-grid',
-	margin: '0 0 20 0'
+        }, {
+            text: "Note", flex: 1, dataIndex: 'note',
+            editor: { allowBlank: true }
+        }],
+        columnLines: true,
+        enableLocking: true,
+        collapsible: false,
+        title: 'Expander Rows in a Collapsible Grid with lockable columns',
+        header: false,
+        emptyText: 'No data yet - please click on one of the tasks at the left',
+        iconCls: 'icon-grid',
+        margin: '0 0 20 0'
     });
 
     // -----------------------------------------------------------------------
@@ -148,63 +136,37 @@ function launchTreePanel(){
     var height = screenSize.height - 280;
 
     Ext.define('PO.view.timesheet.HourIntervalButtonPanel', {
-	extend: 'Ext.panel.Panel',
-	alias: 'ganttButtonPanel',
-	width: 900,
-	height: 500,
-	layout: 'border',
-	defaults: {
-	    collapsible: true,
-	    split: true,
-	    bodyPadding: 0
-	},
-	tbar: [{
-	    icon: '/intranet/images/navbar_default/clock_go.png',
-	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Start_logging "Start logging"] %>',
-	    id: 'buttonStartLogging',
-	    disabled: true
-	}, {
-	    icon: '/intranet/images/navbar_default/clock_stop.png',
-	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Stop_logging "Stop logging and save"] %>',
-	    id: 'buttonStopLogging',
-	    disabled: true
-	}, {
-	    icon: '/intranet/images/navbar_default/clock_delete.png',
-	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Cancel_logging "Cancel logging"] %>',
-	    id: 'buttonCancelLogging',
-	    disabled: true
-	}, {
-	    icon: '/intranet/images/navbar_default/delete.png',
-	    tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Delete_logging "Delete entry"] %>',
-	    id: 'buttonDeleteLogging',
-	    disabled: true
-	}, '-', {
-	    icon: '/intranet/images/navbar_default/arrow_left.png',
-	    id: 'buttonCalendarArrowLeft',
-	    handler: function() {
-		// move one day backward
-		var dateField = Ext.getCmp('datePicker');
-		var d = dateField.getValue();
-		d.setDate(d.getDate() - 1);
-		dateField.setValue(d);
-	    }
-	}, {
-	    xtype: 'datefield',
-	    id: 'datePicker',
-            name: 'from_date',
-	    value: new Date(),
-            maxValue: new Date()  // limited to the current date or prior
-	}, '', {
-	    icon: '/intranet/images/navbar_default/arrow_right.png',
-	    id: 'buttonCalendarArrowRight',
-	    handler: function() {
-		// move one day forward
-		var dateField = Ext.getCmp('datePicker');
-		var d = dateField.getValue();
-		d.setDate(d.getDate() + 1);
-		dateField.setValue(d);
-	    }
-	}]
+        extend: 'Ext.panel.Panel',
+        alias: 'ganttButtonPanel',
+        width: 900,
+        height: 500,
+        layout: 'border',
+        defaults: {
+            collapsible: true,
+            split: true,
+            bodyPadding: 0
+        },
+        tbar: [{
+            icon: '/intranet/images/navbar_default/clock_go.png',
+            tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Start_logging "Start logging"] %>',
+            id: 'buttonStartLogging',
+            disabled: true
+        }, {
+            icon: '/intranet/images/navbar_default/clock_stop.png',
+            tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Stop_logging "Stop logging and save"] %>',
+            id: 'buttonStopLogging',
+            disabled: true
+        }, {
+            icon: '/intranet/images/navbar_default/clock_delete.png',
+            tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Cancel_logging "Cancel logging"] %>',
+            id: 'buttonCancelLogging',
+            disabled: true
+        }, {
+            icon: '/intranet/images/navbar_default/delete.png',
+            tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Delete_logging "Delete entry"] %>',
+            id: 'buttonDeleteLogging',
+            disabled: true
+        }]
     });
 
     // Use the button panel as a container for the task tree and the hour grid
@@ -212,7 +174,7 @@ function launchTreePanel(){
         renderTo: '@task_editor_id@',
         width: width,
         height: height,
-        resizable: true,				// Add handles to the panel, so the user can change size
+        resizable: true,        			// Add handles to the panel, so the user can change size
         items: [
             hourIntervalGrid,
             ganttTreePanel
@@ -223,36 +185,35 @@ function launchTreePanel(){
     // Controller for interaction between Tree and Grid
     //
     Ext.define('PO.controller.timesheet.HourIntervalController', {
-	extend: 'Ext.app.Controller',
+        extend: 'Ext.app.Controller',
 
-	// Variables
-	debug: true,
+        // Variables
+        debug: true,
 
-	'selectedTask': null,			// Task selected by selection model
-	'loggingTask': null,			// contains the task on which hours are logged or null otherwise
-	'loggingStartDate': null,			// contains the time when "start" was pressed or null otherwise
-	'loggingInterval': null,			// the hourInterval object created when logging
+        'selectedTask': null,			// Task selected by selection model
+        'loggingTask': null,			// contains the task on which hours are logged or null otherwise
+        'loggingStartDate': null,			// contains the time when "start" was pressed or null otherwise
+        'loggingInterval': null,			// the hourInterval object created when logging
 
-	// Parameters
-	'renderDiv': null,
-	'hourIntervalButtonPanel': null,
-	'hourIntervalController': null,
-	'hourIntervalGrid': null,
-	'ganttTreePanel': null,
+        // Parameters
+        'renderDiv': null,
+        'hourIntervalButtonPanel': null,
+        'hourIntervalController': null,
+        'hourIntervalGrid': null,
+        'ganttTreePanel': null,
 
-	// Setup the various listeners so that everything gets concentrated here on
-	// this controller.
-	init: function() {
-	    var me = this;
+        // Setup the various listeners so that everything gets concentrated here on
+        // this controller.
+        init: function() {
+            var me = this;
             if (me.debug) { console.log('PO.controller.timesheet.HourIntervalController: init'); }
 
             this.control({
-		'#buttonStartLogging': { click: this.onButtonStartLogging },
-		'#buttonStopLogging': { click: this.onButtonStopLogging },
-		'#buttonCancelLogging': { click: this.onButtonCancelLogging },
-		'#buttonDeleteLogging': { click: this.onButtonDeleteLogging },
-		'#datePicker': { change: this.onDatePickerChange },
-		scope: me.ganttTreePanel
+                '#buttonStartLogging': { click: this.onButtonStartLogging },
+                '#buttonStopLogging': { click: this.onButtonStopLogging },
+                '#buttonCancelLogging': { click: this.onButtonCancelLogging },
+                '#buttonDeleteLogging': { click: this.onButtonDeleteLogging },
+                scope: me.ganttTreePanel
             });
 
             // Listen to changes in the selction model in order to enable/disable the start/stop buttons
@@ -269,24 +230,24 @@ function launchTreePanel(){
             me.hourIntervalGrid.on('beforeedit', this.onGridBeforeEdit, me);
 
 
-	    // Catch a global key strokes. This is used to abort entry with Esc.
-	    // For some reaons this doesn't work on the level of the HourButtonPanel, so we go for the global "window"
-	    Ext.EventManager.on(window, 'keydown', this.onWindowKeyDown, me);
+            // Catch a global key strokes. This is used to abort entry with Esc.
+            // For some reaons this doesn't work on the level of the HourButtonPanel, so we go for the global "window"
+            Ext.EventManager.on(window, 'keydown', this.onWindowKeyDown, me);
 
             return this;
-	},
+        },
 
 
         onGridBeforeEdit: function(editor, context, eOpts) {
             console.log('GanttButtonController.onGridBeforeEdit');
             console.log(context.record);
-	},
+        },
 
         // 
         onGridEdit: function(editor, context) {
             console.log('GanttButtonController.onGridEdit');
-	    var rec = context.record;
-	    
+            var rec = context.record;
+            
             var interval_date = rec.get('interval_date');
             var interval_start = rec.get('interval_start');
             var interval_start_time = rec.get('interval_start_time');
@@ -295,17 +256,17 @@ function launchTreePanel(){
             if ("" == interval_start_time) { interval_start_time = null; }
             if ("" == interval_end_time) { interval_end_time = null; }
 
-	    // start == end => Delete the entry
-	    if (interval_start_time != null && interval_end_time != null) {
-		if (interval_start_time == interval_end_time) {
-		    rec.destroy();
-		    return;
-		}
+            // start == end => Delete the entry
+            if (interval_start_time != null && interval_end_time != null) {
+                if (interval_start_time == interval_end_time) {
+                    rec.destroy();
+                    return;
+                }
             }
 
 
             if (interval_date != null) {
-		// The interval_date has been overwritten by the editor with a Date
+                // The interval_date has been overwritten by the editor with a Date
                 var value = new Date(interval_date);
                 rec.set('interval_date', Ext.Date.format(value, 'Y-m-d'));
             }
@@ -324,240 +285,231 @@ function launchTreePanel(){
                 rec.set('interval_end', Ext.Date.format(value, 'Y-m-d H:i:s'));
             }
 
-	    rec.save();
-	    rec.commit();
+            rec.save();
+            rec.commit();
 
         },
 
-	// The user chose a different date
-	onDatePickerChange: function() {
-	    console.log('GanttButtonController.onDatePickerChange');
-	},
-
-
-	// Esc (Escape) button pressed somewhere in the application window
-	onWindowKeyDown: function(e) {
-	    var keyCode = e.getKey();
-	    var keyCtrl = e.ctrlKey;
+        // Esc (Escape) button pressed somewhere in the application window
+        onWindowKeyDown: function(e) {
+            var keyCode = e.getKey();
+            var keyCtrl = e.ctrlKey;
             console.log('GanttButtonController.onWindowKeyDown: code='+keyCode+', ctrl='+keyCtrl);
-	    
-	    // cancel hour logging with Esc key
-	    if (27 == keyCode) { this.onButtonCancelLogging(); }
-	    if (46 == keyCode) { this.onButtonDeleteLogging(); }
-	},
+            
+            // cancel hour logging with Esc key
+            if (27 == keyCode) { this.onButtonCancelLogging(); }
+            if (46 == keyCode) { this.onButtonDeleteLogging(); }
+        },
 
-	// Click into the empty space below the grid entries in order to start creating a new entry
-	onGridContainerClick: function() {
+        // Click into the empty space below the grid entries in order to start creating a new entry
+        onGridContainerClick: function() {
             console.log('GanttButtonController.GridContainerClick');
-	    var buttonStartLogging = Ext.getCmp('buttonStartLogging');
-	    var disabled = buttonStartLogging.disabled;
-	    if (!disabled) {
-		this.onButtonStartLogging();
-	    }
-	},
+            var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+            var disabled = buttonStartLogging.disabled;
+            if (!disabled) {
+                this.onButtonStartLogging();
+            }
+        },
 
-	/*
-	 * Start logging the time.
-	 * Before calling this procedure, the user must have selected a single
-	 * leaf in the task tree for logging hours.
-	 */
-	onButtonStartLogging: function() {
+        /*
+         * Start logging the time.
+         * Before calling this procedure, the user must have selected a single
+         * leaf in the task tree for logging hours.
+         */
+        onButtonStartLogging: function() {
             console.log('GanttButtonController.ButtonStartLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
             var buttonDeleteLogging = Ext.getCmp('buttonDeleteLogging');
-	    buttonStartLogging.disable();
-	    buttonStopLogging.enable();
-	    buttonCancelLogging.enable();
-	    buttonDeleteLogging.disable();
+            buttonStartLogging.disable();
+            buttonStopLogging.enable();
+            buttonCancelLogging.enable();
+            buttonDeleteLogging.disable();
 
-	    rowEditing.cancelEdit();
+            rowEditing.cancelEdit();
 
-	    // Start logging
-	    this.loggingTask = selectedTask;
-	    this.loggingStartDate = new Date();
+            // Start logging
+            this.loggingTask = selectedTask;
+            this.loggingStartDate = new Date();
 
-	    var hourInterval = new Ext.create('PO.model.timesheet.HourInterval', {
-		user_id: @current_user_id@,
-		project_id: selectedTask.get('id'),
-		interval_start: this.loggingStartDate,
-		interval_date: this.loggingStartDate,
-		interval_start_time: /\d\d:\d\d/.exec(""+new Date())[0]
-	    });
+            var hourInterval = new Ext.create('PO.model.timesheet.HourInterval', {
+                user_id: @current_user_id@,
+                project_id: selectedTask.get('id'),
+                interval_start: this.loggingStartDate,
+                interval_date: this.loggingStartDate,
+                interval_start_time: /\d\d:\d\d/.exec(""+new Date())[0]
+            });
 
-	    // Remember the new interval, add to store and start editing
-	    this.loggingInterval = hourInterval;
-	    hourIntervalStore.add(hourInterval);
-	    //var rowIndex = hourIntervalStore.count() -1;
-	    // rowEditing.startEdit(0, 0);
+            // Remember the new interval, add to store and start editing
+            this.loggingInterval = hourInterval;
+            hourIntervalStore.add(hourInterval);
+            //var rowIndex = hourIntervalStore.count() -1;
+            // rowEditing.startEdit(0, 0);
 
-	},
+        },
 
-	onButtonStopLogging: function() {
+        onButtonStopLogging: function() {
             console.log('GanttButtonController.ButtonStopLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
-	    buttonStartLogging.enable();
-	    buttonStopLogging.disable();
-	    buttonCancelLogging.disable();
+            buttonStartLogging.enable();
+            buttonStopLogging.disable();
+            buttonCancelLogging.disable();
 
-	    // Complete the hourInterval created when starting to log
-	    this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
+            // Complete the hourInterval created when starting to log
+            this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
 
-	    // Not necesary anymore because the store is set to autosync?
-	    this.loggingInterval.save();
-	    rowEditing.cancelEdit();
+            // Not necesary anymore because the store is set to autosync?
+            this.loggingInterval.save();
+            rowEditing.cancelEdit();
 
-	    // Stop logging
-	    this.loggingTask = null;
-	    this.loggingStartDate = null;
+            // Stop logging
+            this.loggingTask = null;
+            this.loggingStartDate = null;
 
-	    // Continue editing the task
-	    var rowIndex = hourIntervalStore.count() -1;
-	    rowEditing.startEdit(rowIndex, 3);
-	},
+            // Continue editing the task
+            var rowIndex = hourIntervalStore.count() -1;
+            rowEditing.startEdit(rowIndex, 3);
+        },
 
-	onButtonCancelLogging: function() {
+        onButtonCancelLogging: function() {
             console.log('GanttButtonController.ButtonCancelLogging');
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
-	    buttonStartLogging.enable();
-	    buttonStopLogging.disable();
-	    buttonCancelLogging.disable();
+            buttonStartLogging.enable();
+            buttonStopLogging.disable();
+            buttonCancelLogging.disable();
 
-	    // Delete the started line
-	    rowEditing.cancelEdit();
-	    hourIntervalStore.remove(this.loggingInterval);
+            // Delete the started line
+            rowEditing.cancelEdit();
+            hourIntervalStore.remove(this.loggingInterval);
 
-	    // Stop logging
-	    this.loggingTask = null;
-	    this.loggingStartDate = null;
-	},
+            // Stop logging
+            this.loggingTask = null;
+            this.loggingStartDate = null;
+        },
 
-	onButtonDeleteLogging: function() {
+        onButtonDeleteLogging: function() {
             console.log('GanttButtonController.ButtonDeleteLogging');
-	    var records = hourIntervalGrid.getSelectionModel().getSelection();
+            var records = hourIntervalGrid.getSelectionModel().getSelection();
             // Not logging already - enable the "start" button
             if (1 == records.length) {                  // Exactly one record enabled
                 var record = records[0];
-		hourIntervalStore.remove(record);
-		record.destroy();
+                hourIntervalStore.remove(record);
+                record.destroy();
             }
 
-	    // Stop logging
-	    this.loggingTask = null;
-	    this.loggingStartDate = null;
-	},
+            // Stop logging
+            this.loggingTask = null;
+            this.loggingStartDate = null;
+        },
 
-	/**
-	 * Control the enabled/disabled status of the Start/Stop logging buttons
-	 */
-	onTreePanelSelectionChange: function(view, records) {
+        /**
+         * Control the enabled/disabled status of the Start/Stop logging buttons.
+         * Skip logging hours when changing the selection.
+         */
+        onTreePanelSelectionChange: function(view, records) {
             if (this.debug) { console.log('GanttButtonController.onTreePanelSelectionChange'); }
-	    // Skip changes on the selection model while logging hours
-	    if (this.loggingTask) { return; }
+            // Skip changes on the selection model while logging hours
+            if (this.loggingTask) { 
+                console.log('GanttButtonController.onTreePanelSelectionChange: While logging hours - skip logging');
+                this.onButtonCancelLogging();
+                return; 
+            }
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
-	    // Not logging already - enable the "start" button
-	    if (1 == records.length) {			// Exactly one record enabled
-		var record = records[0];
-		selectedTask = record;			// Remember which task is selected
-		var isLeaf = record.isLeaf();
-		buttonStartLogging.setDisabled(!isLeaf);
+            // Not logging already - enable the "start" button
+            if (1 == records.length) {			// Exactly one record enabled
+                var record = records[0];
+                selectedTask = record;			// Remember which task is selected
+                var isLeaf = record.isLeaf();
+                buttonStartLogging.setDisabled(!isLeaf);
 
-		// load the list of hourIntervals into the hourIntervalGrid
-		var projectId = record.get('id');
-		var date = Ext.getCmp('datePicker').getValue();
+                // load the list of hourIntervals into the hourIntervalGrid
+                var projectId = record.get('id');
+                hourIntervalStore.getProxy().extraParams = { 
+                    query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey between main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
+                    user_id: @current_user_id@, 
+                    format: 'json' 
+                };
 
-/*		hourIntervalStore.getProxy().extraParams = { 
-		    project_id: projectId, 
-		    user_id: @current_user_id@, 
-		    format: 'json' 
-		};
-*/
-		hourIntervalStore.getProxy().extraParams = { 
-		    query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey between main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
-		    user_id: @current_user_id@, 
-		    format: 'json' 
-		};
+                hourIntervalStore.load({
+                    callback: function() {
+                        console.log('PO.store.timesheet.HourIntervalStore: loaded');
+                    }
+                });
+            } else {					// Zero or two or more records enabled
+                buttonStartLogging.setDisabled(true);
+            }                
+        },
 
-		hourIntervalStore.load({
-		    callback: function() {
-			console.log('PO.store.timesheet.HourIntervalStore: loaded');
-		    }
-		});
-	    } else {					// Zero or two or more records enabled
-		buttonStartLogging.setDisabled(true);
-	    }		
-	},
-
-	/**
-	 * Clicking around in the grid part of the screen,
-	 * Enable or disable the "Delete" button
-	 */
-	onGridSelectionChange: function(view, records) {
+        /**
+         * Clicking around in the grid part of the screen,
+         * Enable or disable the "Delete" button
+         */
+        onGridSelectionChange: function(view, records) {
             if (this.debug) { console.log('GanttButtonController.onGridSelectionChange'); }
             var buttonDeleteLogging = Ext.getCmp('buttonDeleteLogging');
-	    buttonDeleteLogging.setDisabled(1 != records.length);
-	},
+            buttonDeleteLogging.setDisabled(1 != records.length);
+        },
 
 
-	/**
-	 * Handle various key actions
-	 */
-	onCellKeyDown: function(table, htmlTd, cellIndex, record, htmlTr, rowIndex, e, eOpts) {
+        /**
+         * Handle various key actions
+         */
+        onCellKeyDown: function(table, htmlTd, cellIndex, record, htmlTr, rowIndex, e, eOpts) {
             console.log('GanttButtonController.onCellKeyDown');
             var keyCode = e.getKey();
             var keyCtrl = e.ctrlKey;
             console.log('GanttButtonController.onCellKeyDown: code='+keyCode+', ctrl='+keyCtrl);
-	},
+        },
 
 
-	/**
-	 * The windows as a whole was resized
-	 */
-	onWindowsResize: function(width, height) {
+        /**
+         * The windows as a whole was resized
+         */
+        onWindowsResize: function(width, height) {
             console.log('GanttButtonController.onWindowResize');
             var me = this;
             var sideBar = Ext.get('sidebar');				// ]po[ left side bar component
             var sideBarSize = sideBar.getSize();
-	    me.onResize(sideBarSize.width);
-	},
+            me.onResize(sideBarSize.width);
+        },
 
-	/**
-	 * The ]po[ left sideBar was resized
-	 */
-	onSideBarResize: function(event, el, config) {
+        /**
+         * The ]po[ left sideBar was resized
+         */
+        onSideBarResize: function(event, el, config) {
             console.log('GanttButtonController.onSideBarResize');
             var me = this;
-            var sideBar = Ext.get('sidebar');				// ]po[ left side bar component
+            var sideBar = Ext.get('sidebar');        			// ]po[ left side bar component
             var sideBarSize = sideBar.getSize();
 
-	    // We get the event _before_ the sideBar has changed it's size.
-	    // So we actually need to the the oposite of the sidebar size:
-	    if (sideBarSize.width > 100) {
-		sideBarSize.width = -5;
-	    } else {
-		sideBarSize.width = 245;
-	    }
+            // We get the event _before_ the sideBar has changed it's size.
+            // So we actually need to the the oposite of the sidebar size:
+            if (sideBarSize.width > 100) {
+                sideBarSize.width = -5;
+            } else {
+                sideBarSize.width = 245;
+            }
 
-	    me.onResize(sideBarSize.width);
-	},
+            me.onResize(sideBarSize.width);
+        },
 
-	/**
-	 * Generic resizing function, called with the target width of the sideBar
-	 */
-	onResize: function(sideBarWidth) {
+        /**
+         * Generic resizing function, called with the target width of the sideBar
+         */
+        onResize: function(sideBarWidth) {
             console.log('GanttButtonController.onResize: '+sideBarWidth);
             var me = this;
             var screenSize = Ext.getBody().getViewSize();
             var height = me.hourIntervalButtonPanel.getSize().height;
             var width = screenSize.width - sideBarWidth - 75;
             me.hourIntervalButtonPanel.setSize(width, height);
-	}
-	
+        }
+        
     });
 
 
@@ -565,7 +517,7 @@ function launchTreePanel(){
     var hourIntervalController = Ext.create('PO.controller.timesheet.HourIntervalController', {
         'hourIntervalButtonPanel': hourIntervalButtonPanel,
         'hourIntervalController': hourIntervalController,
-	'hourIntervalGrid': hourIntervalGrid,
+        'hourIntervalGrid': hourIntervalGrid,
         'ganttTreePanel': ganttTreePanel
     });
     hourIntervalController.init(this).onLaunch(this);
