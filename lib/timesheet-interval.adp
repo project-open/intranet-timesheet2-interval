@@ -225,7 +225,7 @@ function launchTreePanel(){
             // Listen to changes in the selction model in order to enable/disable the start/stop buttons
             me.hourIntervalGrid.on('selectionchange', this.onGridSelectionChange, me);
 
-            // 
+            // Listen to the Grid Editor that allows to specify start- and end time
             me.hourIntervalGrid.on('edit', this.onGridEdit, me);
             me.hourIntervalGrid.on('beforeedit', this.onGridBeforeEdit, me);
 
@@ -237,10 +237,20 @@ function launchTreePanel(){
             return this;
         },
 
-
+	/*
+	 * The user has double-clicked on the row editor in order to
+	 * manually fill in the values. This procedure automatically
+	 * fills in the end_time.
+	 */
         onGridBeforeEdit: function(editor, context, eOpts) {
             console.log('GanttButtonController.onGridBeforeEdit');
             console.log(context.record);
+
+            // Complete the hourInterval created when starting to log
+            this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
+
+	    // Return true to indicate to the editor that it's OK to edit
+	    return true;
         },
 
         // 
