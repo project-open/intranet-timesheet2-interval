@@ -25,7 +25,7 @@ Ext.require([
 ]);
 
 
-function launchTreePanel(){
+function launchTimesheetIntervalLogging(){
 
     // -----------------------------------------------------------------------
     // Stores
@@ -38,10 +38,10 @@ function launchTreePanel(){
 
 
     var timeEntryStore = [];
-    for (var i = 0; i < 24; i++) {
+    for (var i = @time_entry_store_start_hour@; i < @time_entry_store_end_hour@; i++) {
         var ii = ""+i;
         if (ii.length == 1) { ii = "0"+i; }
-        for (var m = 0; m < 60; m = m + 10 ) {
+        for (var m = 0; m < 60; m = m + 30 ) {
             var mm = ""+m;
             if (mm.length == 1) { mm = "0"+m; }
             timeEntryStore.push(ii + ':' + mm);
@@ -162,6 +162,11 @@ function launchTreePanel(){
             id: 'buttonCancelLogging',
             disabled: true
         }, {
+            icon: '/intranet/images/navbar_default/add.png',
+            tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Manual_logging "Manual logging"] %>',
+            id: 'buttonManualLogging',
+            disabled: true
+        }, {
             icon: '/intranet/images/navbar_default/delete.png',
             tooltip: '<%= [lang::message::lookup "" intranet-timesheet2-interval.Delete_logging "Delete entry"] %>',
             id: 'buttonDeleteLogging',
@@ -212,6 +217,7 @@ function launchTreePanel(){
                 '#buttonStartLogging': { click: this.onButtonStartLogging },
                 '#buttonStopLogging': { click: this.onButtonStopLogging },
                 '#buttonCancelLogging': { click: this.onButtonCancelLogging },
+                '#buttonManualLogging': { click: this.onButtonManualLogging },
                 '#buttonDeleteLogging': { click: this.onButtonDeleteLogging },
                 scope: me.ganttTreePanel
             });
@@ -333,10 +339,12 @@ function launchTreePanel(){
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
+            var buttonManualLogging = Ext.getCmp('buttonManualLogging');
             var buttonDeleteLogging = Ext.getCmp('buttonDeleteLogging');
             buttonStartLogging.disable();
             buttonStopLogging.enable();
             buttonCancelLogging.enable();
+            buttonManualLogging.disable();
             buttonDeleteLogging.disable();
 
             rowEditing.cancelEdit();
@@ -358,7 +366,17 @@ function launchTreePanel(){
             hourIntervalStore.add(hourInterval);
             //var rowIndex = hourIntervalStore.count() -1;
             // rowEditing.startEdit(0, 0);
+        },
 
+
+
+        /*
+         * Start logging the time, for entirely manual entries.
+         */
+        onButtonManualLogging: function() {
+            console.log('GanttButtonController.ButtonManualLogging');
+	    this.onButtonStartLogging();
+            rowEditing.startEdit(this.loggingInterval, 0);
         },
 
         onButtonStopLogging: function() {
@@ -366,9 +384,11 @@ function launchTreePanel(){
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
+            var buttonManualLogging = Ext.getCmp('buttonManualLogging');
             buttonStartLogging.enable();
             buttonStopLogging.disable();
             buttonCancelLogging.disable();
+            buttonManualLogging.enable();
 
             // Complete the hourInterval created when starting to log
             this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
@@ -391,9 +411,11 @@ function launchTreePanel(){
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
+            var buttonManualLogging = Ext.getCmp('buttonManualLogging');
             buttonStartLogging.enable();
             buttonStopLogging.disable();
             buttonCancelLogging.disable();
+            buttonManualLogging.enable();
 
             // Delete the started line
             rowEditing.cancelEdit();
@@ -432,12 +454,14 @@ function launchTreePanel(){
                 return; 
             }
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
+            var buttonManualLogging = Ext.getCmp('buttonManualLogging');
             // Not logging already - enable the "start" button
             if (1 == records.length) {			// Exactly one record enabled
                 var record = records[0];
                 selectedTask = record;			// Remember which task is selected
                 var isLeaf = record.isLeaf();
                 buttonStartLogging.setDisabled(!isLeaf);
+                buttonManualLogging.setDisabled(!isLeaf);
 
                 // load the list of hourIntervals into the hourIntervalGrid
                 var projectId = record.get('id');
@@ -454,6 +478,7 @@ function launchTreePanel(){
                 });
             } else {					// Zero or two or more records enabled
                 buttonStartLogging.setDisabled(true);
+                buttonManualLogging.setDisabled(true);
             }                
         },
 
@@ -557,7 +582,7 @@ Ext.onReady(function() {
     var taskTreeStore = Ext.create('PO.store.timesheet.TaskTreeStore');
     var hourIntervalStore = Ext.create('PO.store.timesheet.HourIntervalStore');
 
-    // Use a "store coodinator" in order to launchTreePanel() only
+    // Use a "store coodinator" in order to launchTimesheetIntervalLogging() only
     // if all stores have been loaded:
     var coordinator = Ext.create('PO.controller.StoreLoadCoordinator', {
         stores: [
@@ -569,7 +594,7 @@ Ext.onReady(function() {
                 // Check if the application was launched before
                 if ("boolean" == typeof this.loadedP) { return; }
                 // Launch the actual application.
-                launchTreePanel();
+                launchTimesheetIntervalLogging();
                 // Mark the application as launched
                 this.loadedP = true;
             }

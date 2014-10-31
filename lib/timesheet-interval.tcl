@@ -24,7 +24,9 @@ set main_project_id $project_id
 set task_editor_rand [expr round(rand() * 100000000.0)]
 set task_editor_id "task_editor_$task_editor_rand"
 
-
+# Start and end time for default combo box with time entry options
+set time_entry_store_start_hour [parameter::get_from_package_key -package_key "intranet-timesheet2-interval" -parameter TimeEntryStoreStartHour -default "9"]
+set time_entry_store_end_hour [parameter::get_from_package_key -package_key "intranet-timesheet2-interval" -parameter TimeEntryStoreEndHour -default "19"]
 
 set please_add_note_required_l10n [lang::message::lookup "" intranet-timesheet2-inverval.Please_add_a_note_required "Please add a note (required)"]
 
