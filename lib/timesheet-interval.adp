@@ -246,9 +246,11 @@ function launchTreePanel(){
             console.log('GanttButtonController.onGridBeforeEdit');
             console.log(context.record);
 
-            // Complete the hourInterval created when starting to log
-            this.loggingInterval.set('interval_end_time', /\d\d:\d\d/.exec(""+new Date())[0]);
-
+	    var endTime = context.record.get('interval_end_time');
+	    if (typeof endTime === 'undefined' || "" == endTime) {
+		endTime = /\d\d:\d\d/.exec(""+new Date())[0];
+		context.record.set('interval_end_time', endTime);
+	    }
 	    // Return true to indicate to the editor that it's OK to edit
 	    return true;
         },
