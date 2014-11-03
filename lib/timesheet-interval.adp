@@ -179,7 +179,7 @@ function launchTimesheetIntervalLogging(){
         renderTo: '@task_editor_id@',
         width: width,
         height: height,
-        resizable: true,        			// Add handles to the panel, so the user can change size
+        resizable: true,					// Add handles to the panel, so the user can change size
         items: [
             hourIntervalGrid,
             ganttTreePanel
@@ -195,10 +195,10 @@ function launchTimesheetIntervalLogging(){
         // Variables
         debug: true,
 
-        'selectedTask': null,			// Task selected by selection model
-        'loggingTask': null,			// contains the task on which hours are logged or null otherwise
-        'loggingStartDate': null,			// contains the time when "start" was pressed or null otherwise
-        'loggingInterval': null,			// the hourInterval object created when logging
+        'selectedTask': null,					// Task selected by selection model
+        'loggingTask': null,					// contains the task on which hours are logged or null otherwise
+        'loggingStartDate': null,				// contains the time when "start" was pressed or null otherwise
+        'loggingInterval': null,				// the hourInterval object created when logging
 
         // Parameters
         'renderDiv': null,
@@ -243,22 +243,38 @@ function launchTimesheetIntervalLogging(){
             return this;
         },
 
-	/*
-	 * The user has double-clicked on the row editor in order to
-	 * manually fill in the values. This procedure automatically
-	 * fills in the end_time.
-	 */
+
+        /*
+         * Returns true if there is a single task in the GanttTreePanel
+         * selected. A selected (sub-) project will return false.
+         */
+        ganttTreePanelLeafSelected: function() {
+            var isLeaf = false;
+            var selModel = ganttTreePanel.getSelectionModel();
+            var records = selModel.getSelection();
+            if (1 == records.length) {                  // Exactly one record needs to be enabled
+                isLeaf = records[0].isLeaf();
+            }
+            return isLeaf;
+        },
+
+        
+        /*
+         * The user has double-clicked on the row editor in order to
+         * manually fill in the values. This procedure automatically
+         * fills in the end_time.
+         */
         onGridBeforeEdit: function(editor, context, eOpts) {
             console.log('GanttButtonController.onGridBeforeEdit');
             console.log(context.record);
 
-	    var endTime = context.record.get('interval_end_time');
-	    if (typeof endTime === 'undefined' || "" == endTime) {
-		endTime = /\d\d:\d\d/.exec(""+new Date())[0];
-		context.record.set('interval_end_time', endTime);
-	    }
-	    // Return true to indicate to the editor that it's OK to edit
-	    return true;
+            var endTime = context.record.get('interval_end_time');
+            if (typeof endTime === 'undefined' || "" == endTime) {
+                endTime = /\d\d:\d\d/.exec(""+new Date())[0];
+                context.record.set('interval_end_time', endTime);
+            }
+            // Return true to indicate to the editor that it's OK to edit
+            return true;
         },
 
         // 
@@ -336,6 +352,7 @@ function launchTimesheetIntervalLogging(){
          */
         onButtonStartLogging: function() {
             console.log('GanttButtonController.ButtonStartLogging');
+
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
@@ -375,7 +392,7 @@ function launchTimesheetIntervalLogging(){
          */
         onButtonManualLogging: function() {
             console.log('GanttButtonController.ButtonManualLogging');
-	    this.onButtonStartLogging();
+            this.onButtonStartLogging();
             rowEditing.startEdit(this.loggingInterval, 0);
         },
 
@@ -412,11 +429,17 @@ function launchTimesheetIntervalLogging(){
             var buttonStopLogging = Ext.getCmp('buttonStopLogging');
             var buttonCancelLogging = Ext.getCmp('buttonCancelLogging');
             var buttonManualLogging = Ext.getCmp('buttonManualLogging');
+
             buttonStartLogging.enable();
             buttonStopLogging.disable();
             buttonCancelLogging.disable();
             buttonManualLogging.enable();
 
+            // Check if a leaf is selected in order to determine if StartLogging can be enabled
+            var isLeaf = this.ganttTreePanelLeafSelected();
+            buttonStartLogging.setDisabled(!isLeaf);
+            buttonManualLogging.setDisabled(!isLeaf);
+            
             // Delete the started line
             rowEditing.cancelEdit();
             hourIntervalStore.remove(this.loggingInterval);
@@ -456,15 +479,14 @@ function launchTimesheetIntervalLogging(){
             var buttonStartLogging = Ext.getCmp('buttonStartLogging');
             var buttonManualLogging = Ext.getCmp('buttonManualLogging');
             // Not logging already - enable the "start" button
-            if (1 == records.length) {			// Exactly one record enabled
-                var record = records[0];
-                selectedTask = record;			// Remember which task is selected
-                var isLeaf = record.isLeaf();
+            if (1 == records.length) {					// Exactly one record enabled
+                selectedTask = records[0];				// Remember which task is selected
+                var isLeaf = selectedTask.isLeaf();
                 buttonStartLogging.setDisabled(!isLeaf);
                 buttonManualLogging.setDisabled(!isLeaf);
 
                 // load the list of hourIntervals into the hourIntervalGrid
-                var projectId = record.get('id');
+                var projectId = selectedTask.get('id');
                 hourIntervalStore.getProxy().extraParams = { 
                     query: 'project_id in (select p.project_id from im_projects p, im_projects main_p where main_p.project_id = '+projectId+' and p.tree_sortkey between main_p.tree_sortkey and tree_right(main_p.tree_sortkey))',
                     user_id: @current_user_id@, 
@@ -476,7 +498,7 @@ function launchTimesheetIntervalLogging(){
                         console.log('PO.store.timesheet.HourIntervalStore: loaded');
                     }
                 });
-            } else {					// Zero or two or more records enabled
+            } else {							// Zero or two or more records enabled
                 buttonStartLogging.setDisabled(true);
                 buttonManualLogging.setDisabled(true);
             }                
@@ -521,7 +543,7 @@ function launchTimesheetIntervalLogging(){
         onSideBarResize: function(event, el, config) {
             console.log('GanttButtonController.onSideBarResize');
             var me = this;
-            var sideBar = Ext.get('sidebar');        			// ]po[ left side bar component
+            var sideBar = Ext.get('sidebar');				// ]po[ left side bar component
             var sideBarSize = sideBar.getSize();
 
             // We get the event _before_ the sideBar has changed it's size.
