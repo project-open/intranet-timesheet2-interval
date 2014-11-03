@@ -18,7 +18,8 @@
         <maturity>0</maturity>
 
         <provides url="intranet-timesheet2-interval" version="0.1d"/>
-
+        <requires url="intranet-core" version="4.0.0.0.0"/>
+        <requires url="sencha-core" version="4.0.0.0.0"/>
         <callbacks>
         </callbacks>
         <parameters>
