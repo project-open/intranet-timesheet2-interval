@@ -10,20 +10,22 @@
     <inherit-templates-p>f</inherit-templates-p>
     <auto-mount>intranet-timesheet2-interval</auto-mount>
 
-    <version name="0.1d" url="http://openacs.org/repository/download/apm/intranet-timesheet2-interval-0.1d.apm">
+    <version name="4.1.0.0.0" url="http://openacs.org/repository/download/apm/intranet-timesheet2-interval-4.1.0.0.0.apm">
         <owner url="mailto:frank.bergmann@project-open.com">Frank Bergmann</owner>
         <summary>Timesheet entry with start-end time recording</summary>
         <vendor url="http://www.project-open.com/">]project-open[</vendor>
         <description format="text/plain">Allows to log employee hours including exact start and end time. It also allows to record information about the activity type and thus to determine the material for the logged time.</description>
         <maturity>0</maturity>
 
-        <provides url="intranet-timesheet2-interval" version="0.1d"/>
+        <provides url="intranet-timesheet2-interval" version="4.1.0.0.0"/>
         <requires url="intranet-core" version="4.0.0.0.0"/>
         <requires url="sencha-core" version="4.0.0.0.0"/>
+
         <callbacks>
         </callbacks>
         <parameters>
-        <!-- No version parameters -->
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreEndHour"  default="18" description="Start of the time sheet entry drop-down. Default is &quot;18&quot;, but you can set it to &quot;23&quot; for 24h logging"/>
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreStartHour"  default="9" description="Start of the time sheet entry drop-down. Default is &quot;9&quot;, but you can set it to &quot;0&quot; for a 24h logging."/>
         </parameters>
 
     </version>
