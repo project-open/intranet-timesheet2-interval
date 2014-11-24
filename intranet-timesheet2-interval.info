@@ -24,7 +24,7 @@
         <callbacks>
         </callbacks>
         <parameters>
-            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreEndHour"  default="18" description="Start of the time sheet entry drop-down. Default is &quot;18&quot;, but you can set it to &quot;23&quot; for 24h logging"/>
+            <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreEndHour"  default="18" description="Start of the time sheet entry drop-down. Default is &quot;18&quot;, but you can set it to &quot;24&quot; for 24h logging"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreStartHour"  default="9" description="Start of the time sheet entry drop-down. Default is &quot;9&quot;, but you can set it to &quot;0&quot; for a 24h logging."/>
         </parameters>
 
