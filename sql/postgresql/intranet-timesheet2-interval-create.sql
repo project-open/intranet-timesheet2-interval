@@ -79,8 +79,6 @@ create index im_hour_intervals_interval_start_idx on im_hour_intervals(interval_
 
 
 
-
-
 -- ------------------------------------------------------------
 -- Trigger for synchronization between intervals and hours
 -- ------------------------------------------------------------
@@ -126,9 +124,15 @@ BEGIN
 		where	user_id = p_user_id and
 			project_id = p_project_id and
 			interval_start::date = p_day
+		order by interval_id
 	LOOP
-		v_sum_hours := v_sum_hours + coalesce(extract(epoch from row.interval_end - row.interval_start) / 3600.0, 0.0);
-		v_sum_notes := v_sum_notes || coalesce(row.note, '') || E'\n';
+		v_sum_hours := v_sum_hours + 
+			       coalesce(extract(epoch from row.interval_end - row.interval_start) / 3600.0, 0.0);
+		IF '' != v_sum_notes THEN v_sum_notes := v_sum_notes || ', ';
+		v_sum_notes := v_sum_notes || 
+			       to_char(interval_start, 'HH24:MI') || '-' || 
+			       to_char(interval_end, 'HH24:MI') || ': ' ||
+			       coalesce(row.note, '');
 	END LOOP;
 
 	-- Update the im_hours entry with the sum of the values
