@@ -83,8 +83,7 @@ create index im_hour_intervals_interval_start_idx on im_hour_intervals(interval_
 -- Trigger for synchronization between intervals and hours
 -- ------------------------------------------------------------
 
--- Create a new im_hour row for the interval or update 
--- an existing one.
+-- Create a new im_hour row for the interval or update an existing one.
 create or replace function im_hour_interval_update_im_hours (integer, integer, date)
 returns integer as $body$
 DECLARE
@@ -128,11 +127,13 @@ BEGIN
 	LOOP
 		v_sum_hours := v_sum_hours + 
 			       coalesce(extract(epoch from row.interval_end - row.interval_start) / 3600.0, 0.0);
-		IF '' != v_sum_notes THEN v_sum_notes := v_sum_notes || ', ';
+		IF '' != v_sum_notes THEN 
+			v_sum_notes := v_sum_notes || ', ';
+		END IF;
 		v_sum_notes := v_sum_notes || 
-			       to_char(interval_start, 'HH24:MI') || '-' || 
-			       to_char(interval_end, 'HH24:MI') || ': ' ||
-			       coalesce(row.note, '');
+			       to_char(row.interval_start, 'HH24:MI') || '-' || 
+			       to_char(row.interval_end, 'HH24:MI') || ': ' ||
+			       translate(coalesce(row.note, ''), ',:', '.;');
 	END LOOP;
 
 	-- Update the im_hours entry with the sum of the values
