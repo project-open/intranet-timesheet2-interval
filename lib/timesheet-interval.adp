@@ -62,6 +62,14 @@ function launchTimesheetIntervalLogging(){
         clicksToMoveEditor: 2,
         listeners: {
             edit: function(editor, context, eOpts) {
+
+		// Check that the endTime is later than startTime
+		var startTime = context.record.get('interval_start_time');
+		var endTime = context.record.get('interval_end_time');
+		if (startTime > endTime) {
+		    return false;                     // Just return false - no error message
+		}
+
                 context.record.save();
             }
         }
