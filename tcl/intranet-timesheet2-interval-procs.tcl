@@ -37,6 +37,53 @@ ad_proc -public im_timesheet_interval_portlet {
 
 
 
+
+# ---------------------------------------------------------------------
+# Permissions
+# ---------------------------------------------------------------------
+
+ad_proc -public im_hour_interval_permissions {user_id interval_id view_var read_var write_var admin_var} {
+    Fill the "by-reference" variables read, write and admin
+    with the permissions of $user_id on $interval_id. 
+    A user is allowed to see, modify and delete his own
+    hour_intervals.
+} {
+    upvar $view_var view
+    upvar $read_var read
+    upvar $write_var write
+    upvar $admin_var admin
+
+    set current_user_id $user_id
+    set view 0
+    set read 0
+    set write 0
+    set admin 0
+
+    # Empty or bad interval_id
+    if {"" == $interval_id || ![string is integer $interval_id]} { return }
+
+    # Get cached hour_interval info
+    if {![db_0or1row hour_interval_info "
+	select	*
+	from	im_hour_intervals i
+	where	i.interval_id = :interval_id
+    "]} {
+	# Thic can happen if this procedure is called while the hour_interval hasn't yet been created
+	ns_log Error "im_hour_interval_permissions: user_id=$user_id, interval_id=$interval_id: interval_id not found"
+	return
+    }
+
+    # The owner and administrators can always read and write
+    if {$current_user_id == $user_id} {
+	set view 1
+	set read 1
+	set write 1
+	set admin 1
+    }
+}
+
+
+
 ad_proc -public im_hour_interval_nuke {
     {-current_user_id ""}
     rest_oid
