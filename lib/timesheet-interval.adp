@@ -14,7 +14,7 @@ Ext.require([
     'Ext.data.*',
     'Ext.grid.*',
     'Ext.tree.*',
-    'PO.class.CategoryStore',
+    'PO.store.CategoryStore',
     'PO.controller.StoreLoadCoordinator',
     'PO.model.timesheet.TimesheetTask',
     'PO.model.timesheet.HourInterval',
