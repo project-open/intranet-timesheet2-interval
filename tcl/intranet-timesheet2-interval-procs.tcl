@@ -21,7 +21,7 @@ ad_proc -public im_timesheet_interval_portlet {
 } {
     # Sencha check and permissions
     if {![im_sencha_extjs_installed_p]} { return "" }
-    set current_user_id [ad_get_user_id]
+    set current_user_id [ad_conn user_id]
     im_project_permissions $current_user_id $project_id view_p read_p write_p admin_p
     if {!$read_p} { return "" }
     if {![im_permission $current_user_id add_hours]} { return "" }
