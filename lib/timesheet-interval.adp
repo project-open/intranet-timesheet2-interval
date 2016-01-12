@@ -98,9 +98,10 @@ function launchTimesheetIntervalLogging(){
             xtype: 'datecolumn',
             dataIndex: 'interval_date', 
             renderer: Ext.util.Format.dateRenderer('Y-m-d'),
-            editor: { 
+            editor: {
                 xtype: 'datefield',
-                allowBlank: true 
+                allowBlank: true,
+		startDay: @week_start_day@
             }
         }, {
             text: "Start Time",
