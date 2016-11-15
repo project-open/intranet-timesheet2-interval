@@ -13,6 +13,7 @@
     <version name="5.0.2.0.0" url="http://www.project-open.net/download/apm/intranet-timesheet2-interval-5.0.2.0.0.apm">
         <owner url="mailto:frank.bergmann@project-open.com">Frank Bergmann</owner>
         <summary>Timesheet entry with start-end time recording</summary>
+        <release-date>2016-11-15</release-date>
         <vendor url="http://www.project-open.com/">]project-open[</vendor>
         <description format="text/plain">Allows to log employee hours including exact start and end time. It also allows to record information about the activity type and thus to determine the material for the logged time.</description>
         <maturity>0</maturity>
