@@ -7,7 +7,7 @@ Ext.Loader.setPath('PO.model', '/sencha-core/model');
 Ext.Loader.setPath('PO.store', '/sencha-core/store');
 Ext.Loader.setPath('PO.class', '/sencha-core/class');
 Ext.Loader.setPath('Ext.ux', '/sencha-core/ux');
-Ext.Loader.setPath('PO.view.gantt', '/sencha-core/view/gantt');
+Ext.Loader.setPath('PO.view', '/sencha-core/view');
 Ext.Loader.setPath('PO.controller', '/sencha-core/controller');
 
 Ext.require([
