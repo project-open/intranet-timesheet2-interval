@@ -15,19 +15,17 @@
         <summary>Timesheet entry with start-end time recording</summary>
         <release-date>2016-11-15</release-date>
         <vendor url="http://www.project-open.com/">]project-open[</vendor>
+	<license>]project-open[ Free License (FL)</license>
         <description format="text/plain">Allows to log employee hours including exact start and end time. It also allows to record information about the activity type and thus to determine the material for the logged time.</description>
         <maturity>0</maturity>
-
         <provides url="intranet-timesheet2-interval" version="4.1.0.0.0"/>
         <requires url="intranet-core" version="4.0.0.0.0"/>
         <requires url="sencha-core" version="4.0.0.0.0"/>
-
         <callbacks>
         </callbacks>
         <parameters>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreEndHour"  default="18" description="Start of the time sheet entry drop-down. Default is &quot;18&quot;, but you can set it to &quot;24&quot; for 24h logging"/>
             <parameter scope="instance" datatype="number"  min_n_values="1"  max_n_values="1"  name="TimeEntryStoreStartHour"  default="9" description="Start of the time sheet entry drop-down. Default is &quot;9&quot;, but you can set it to &quot;0&quot; for a 24h logging."/>
         </parameters>
-
     </version>
 </package>
